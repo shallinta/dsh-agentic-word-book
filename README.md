@@ -59,12 +59,12 @@ DSH 插件。左侧菜单一个书本图标，点开占据右侧整块面板：�
 ```text
 请帮我安装 DSH 插件「随记单词本」：
 包名 @suiji-ai/dsh-agentic-word-book
-源码仓库 git@github.com:shallinta/dsh-agentic-word-book.git
+源码仓库 https://github.com/shallinta/dsh-agentic-word-book
 装好后左侧栏应该出现「随记单词本」，没出现就检查插件状态或提示我重启。
 ```
 
 > 本机已有源码时，也可以让模型从目录安装（`plugin_manager` 的 `install_bundle`，target 指向本包目录）。
-> 网络不通 HTTPS 时用上面的 SSH 地址。
+> 如果 HTTPS 拉不动，可以改用 SSH：`git@github.com:shallinta/dsh-agentic-word-book.git`
 
 装好后打开面板 → 右上角「设定」：
 
