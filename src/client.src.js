@@ -1603,6 +1603,10 @@ window.__ModuleLoader__.load({
           h('div', { className: 'wb-field' },
             h('span', null, '单词本根目录'),
             h('code', { className: 'wb-path' }, String(s.rootDirLabel || s.rootDir || DEFAULT_ROOT_LABEL)),
+            s.rootDirExists === false ? h('div', { className: 'wb-set-warn' },
+              h('b', null, '这个目录不存在'),
+              h('p', null, '换了电脑的话，点下面的「选择文件夹…」指到你的数据目录；新建的话直接点「恢复默认目录」或让插件创建。')
+            ) : null,
             h('div', { className: 'wb-set-row' },
               h('button', { type: 'button', className: 'wb-mini', onClick: function () { pickFolder('rootDir'); } }, '选择文件夹…'),
               h('button', { type: 'button', className: 'wb-mini', onClick: function () { openRootFolder(s.rootDir); } }, '打开文件夹'),
@@ -2259,7 +2263,15 @@ window.__ModuleLoader__.load({
               )
             ),
             !WORDS.length
-              ? h('div', { className: 'wb-empty' }, '还没有单词。用「+单词」让技能添加，或在设定里确认「单词本根目录」。')
+              ? h('div', { className: 'wb-empty' },
+                STORE.settings.rootDirExists === false
+                  ? h('span', null,
+                      h('b', null, '单词本根目录不存在：'),
+                      String(STORE.settings.rootDirLabel || STORE.settings.rootDir || ''),
+                      h('br'),
+                      '换了电脑的话，去「设定」里点「选择文件夹…」指到你的数据目录。')
+                  : '还没有单词。用「+单词」让技能添加，或在设定里确认「单词本根目录」。'
+              )
               : rec
                 ? h(RecognitionView)
                 : !entry

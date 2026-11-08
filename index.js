@@ -122,6 +122,9 @@ function loadState(rootDir) {
     /* 界面展示用的可移植写法 */
     rootDirLabel: tildePath(rootDir),
     workDirLabel: tildePath(resolveRoot(stored.workDir || DEFAULT_SETTINGS.workDir)),
+    /* 目录不存在多半是换了电脑，提示用户重新选 */
+    rootDirExists: existsSync(rootDir),
+    workDirExists: existsSync(resolveRoot(stored.workDir || DEFAULT_SETTINGS.workDir)),
   })
   const meta = readJson(p.meta, {})
   const tagList = Array.isArray(meta.tagList) ? meta.tagList.filter((t) => typeof t === 'string' && t.trim()) : []
