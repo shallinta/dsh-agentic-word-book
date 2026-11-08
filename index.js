@@ -34,8 +34,8 @@ const DEFAULT_SETTINGS = {
   subtitle: '点一个单词：看图片、听发音、读词组，再玩拼写游戏',
   groupBy: 'date',
   order: 'desc',
-  rootDir: path.join(homedir(), 'Documents', 'dsh', 'suiji-word-book'),
-  workDir: WORKDIR_DEFAULT,
+  rootDir: '~/Documents/dsh/suiji-word-book',
+  workDir: '~/Documents/deepseek-harness/suiji-word-book',
   workTitle: '随记单词本',
   newSessionFullAccess: true,   // 用 +单词 新建的会话直接给完全权限
   showAddWord: false,
@@ -72,11 +72,36 @@ function writeJson(file, value) {
   writeFileSync(file, JSON.stringify(value, null, 2) + '\n', 'utf8')
 }
 
+/* 展开 ~ / %VAR% / $VAR，再转绝对路径 */
+function expandHome(text) {
+  let out = String(text || '').trim()
+  if (!out) return out
+  if (out === '~') out = homedir()
+  else if (out.startsWith('~/') || out.startsWith('~\\')) out = homedir() + out.slice(1)
+  out = out.replace(/%([A-Za-z_][A-Za-z0-9_]*)%/g, function (m, name) {
+    const v = process.env[name]
+    return v === undefined ? m : v
+  })
+  out = out.replace(/\$\{([A-Za-z_][A-Za-z0-9_]*)\}|\$([A-Za-z_][A-Za-z0-9_]*)/g, function (m, braced, plain) {
+    const v = process.env[braced || plain]
+    return v === undefined ? m : v
+  })
+  return out
+}
+
+/* 反方向：家目录内的路径存成 ~/...，让 settings.json 可跨机器 */
+function tildePath(abs) {
+  const full = path.resolve(String(abs || ''))
+  const home = path.resolve(homedir())
+  const rel = path.relative(home, full)
+  if (!rel || rel.startsWith('..') || path.isAbsolute(rel)) return full
+  return '~/' + rel.split(path.sep).join('/')
+}
+
 function resolveRoot(raw) {
-  const text = String(raw || '').trim()
-  if (!text) return DEFAULT_SETTINGS.rootDir
-  const expanded = text.startsWith('~') ? path.join(homedir(), text.slice(1)) : text
-  return path.resolve(expanded)
+  const text = expandHome(raw)
+  if (!text) return path.resolve(expandHome(DEFAULT_SETTINGS.rootDir))
+  return path.resolve(text)
 }
 
 function paths(rootDir) {
@@ -90,7 +115,14 @@ function paths(rootDir) {
 
 function loadState(rootDir) {
   const p = paths(rootDir)
-  const settings = Object.assign({}, DEFAULT_SETTINGS, readJson(p.settings, {}), { rootDir })
+  const stored = Object.assign({}, DEFAULT_SETTINGS, readJson(p.settings, {}))
+  const settings = Object.assign({}, stored, {
+    rootDir,
+    workDir: resolveRoot(stored.workDir || DEFAULT_SETTINGS.workDir),
+    /* 界面展示用的可移植写法 */
+    rootDirLabel: tildePath(rootDir),
+    workDirLabel: tildePath(resolveRoot(stored.workDir || DEFAULT_SETTINGS.workDir)),
+  })
   const meta = readJson(p.meta, {})
   const tagList = Array.isArray(meta.tagList) ? meta.tagList.filter((t) => typeof t === 'string' && t.trim()) : []
   const tags = {}
@@ -106,8 +138,13 @@ function saveState(rootDir, patch) {
   const p = paths(rootDir)
   mkdirSync(rootDir, { recursive: true })
   const current = loadState(rootDir)
-  const settings = Object.assign({}, current.settings, patch.settings || {}, { rootDir })
-  writeJson(p.settings, settings)
+  const merged = Object.assign({}, current.settings, patch.settings || {}, { rootDir })
+  const toDisk = Object.assign({}, merged)
+  delete toDisk.rootDirLabel
+  delete toDisk.workDirLabel
+  toDisk.rootDir = tildePath(merged.rootDir)
+  toDisk.workDir = tildePath(resolveRoot(merged.workDir || DEFAULT_SETTINGS.workDir))
+  writeJson(p.settings, toDisk)
   writeJson(p.meta, {
     tagList: patch.tagList || current.tagList,
     tags: patch.tags || current.tags,
@@ -182,6 +219,12 @@ $ErrorActionPreference = 'Stop'
 if (-not $Root) {
   $settingsPath = Join-Path $env:USERPROFILE 'Documents\\dsh\\suiji-word-book\\settings.json'
   if (Test-Path $settingsPath) { $Root = (Get-Content $settingsPath -Raw | ConvertFrom-Json).rootDir }
+  if ($Root -like '~*') {
+    $Root = Join-Path $env:USERPROFILE ($Root.Substring(1).TrimStart('\\', '/'))
+  }
+  if ($Root -match '%[A-Za-z_][A-Za-z0-9_]*%') {
+    $Root = [regex]::Replace($Root, '%([A-Za-z_][A-Za-z0-9_]*)%', { param($m) [Environment]::GetEnvironmentVariable($m.Groups[1].Value) })
+  }
   if (-not $Root) { $Root = Join-Path $env:USERPROFILE 'Documents\\dsh\\suiji-word-book' }
 }
 $slug = $Word.Trim().ToLower()
@@ -245,9 +288,9 @@ export function apply(rootCtx) {
     }
   }
 
-  const currentRoot = () => loadState(resolveRoot(readJson(paths(DEFAULT_SETTINGS.rootDir).settings, {}).rootDir)).rootDir
+  const currentRoot = () => loadState(resolveRoot(readJson(paths(resolveRoot(DEFAULT_SETTINGS.rootDir)).settings, {}).rootDir)).rootDir
   const stateOf = () => {
-    const bootSettings = readJson(paths(DEFAULT_SETTINGS.rootDir).settings, {})
+    const bootSettings = readJson(paths(resolveRoot(DEFAULT_SETTINGS.rootDir)).settings, {})
     const rootDir = resolveRoot(bootSettings.rootDir)
     return loadState(rootDir)
   }
@@ -262,7 +305,8 @@ export function apply(rootCtx) {
       try {
         const state = stateOf()
         const words = readJson(paths(state.rootDir).words, [])
-        sendJson(res, 200, { ok: true, state, words: Array.isArray(words) ? words : [], defaultRoot: DEFAULT_SETTINGS.rootDir, skillDir: skillDir() })
+        sendJson(res, 200, { ok: true, state, words: Array.isArray(words) ? words : [], defaultRoot: DEFAULT_SETTINGS.rootDir,
+            defaultRoot: DEFAULT_SETTINGS.rootDir, skillDir: skillDir() })
       } catch (err) {
         sendJson(res, 200, { ok: false, error: String(err?.message ?? err) })
       }

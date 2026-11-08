@@ -1602,7 +1602,7 @@ window.__ModuleLoader__.load({
           h('p', { className: 'wb-set-note' }, '首页卡片上右键可以给单词选标签（可多选）；顶部标签可快速筛选。删掉标签时，单词上的这个标签也会一起移除。'),
           h('div', { className: 'wb-field' },
             h('span', null, '单词本根目录'),
-            h('code', { className: 'wb-path' }, String(s.rootDir || DEFAULT_ROOT_LABEL)),
+            h('code', { className: 'wb-path' }, String(s.rootDirLabel || s.rootDir || DEFAULT_ROOT_LABEL)),
             h('div', { className: 'wb-set-row' },
               h('button', { type: 'button', className: 'wb-mini', onClick: function () { pickFolder('rootDir'); } }, '选择文件夹…'),
               h('button', { type: 'button', className: 'wb-mini', onClick: function () { openRootFolder(s.rootDir); } }, '打开文件夹'),
@@ -1611,7 +1611,7 @@ window.__ModuleLoader__.load({
           ),
           h('div', { className: 'wb-field' },
             h('span', null, '会话工作目录'),
-            h('code', { className: 'wb-path' }, String(s.workDir || DEFAULT_WORKDIR_LABEL)),
+            h('code', { className: 'wb-path' }, String(s.workDirLabel || s.workDir || DEFAULT_WORKDIR_LABEL)),
             h('div', { className: 'wb-set-row' },
               h('button', { type: 'button', className: 'wb-mini', onClick: function () { pickFolder('workDir'); } }, '选择文件夹…'),
               h('span', { className: 'wb-set-hint' }, '「+单词」新建的会话都用这个 DSH 工作目录，不存在会自动创建')
