@@ -345,6 +345,19 @@ export function apply(rootCtx) {
           return sendJson(res, 200, { ok: true, skillDir: dir, state: next })
         }
 
+        if (op === 'pick-folder') {
+          const picker = ctx.get('directoryPicker')
+          if (!picker || typeof picker.capability !== 'function') {
+            return sendJson(res, 200, { ok: false, error: '系统目录选择器不可用' })
+          }
+          const cap = picker.capability()
+          if (!cap || cap.kind !== 'native' || typeof cap.pick !== 'function') {
+            return sendJson(res, 200, { ok: false, error: '当前平台不支持原生目录选择' })
+          }
+          const chosen = await cap.pick(new AbortController().signal)
+          return sendJson(res, 200, { ok: true, path: chosen || '' })
+        }
+
         if (op === 'open-folder') {
           const target = resolveRoot(args.path || state.settings.rootDir)
           mkdirSync(target, { recursive: true })

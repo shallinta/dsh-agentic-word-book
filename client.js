@@ -1186,6 +1186,20 @@ window.__ModuleLoader__.load({
       emit();
     }
 
+    /* 用系统原生的目录选择对话框挑一个目录（宿主弹窗，桌面端同一台机器） */
+    function pickFolder(kind) {
+      hostOp('pick-folder', {}).then(function (res) {
+        if (!res) return;
+        if (!res.ok) { STORE.addWordState = res.error || '打开目录选择器失败'; emit(); return; }
+        const chosen = String(res.path || '').trim();
+        if (!chosen) return;
+        if (kind === 'workDir') { patchSettings({ workDir: chosen }); return; }
+        rootDraft = chosen;
+        emit();
+        applyRootDir(chosen);
+      });
+    }
+
     function openRootFolder(dir) {
       hostOp('open-folder', { path: dir || '' }).then(function (res) {
         if (res && res.ok) {
@@ -1595,6 +1609,7 @@ window.__ModuleLoader__.load({
               onKeyDown: function (ev) { if (ev.key === 'Enter') { ev.preventDefault(); applyRootDir(rootDraft); } }
             }),
             h('div', { className: 'wb-set-row' },
+              h('button', { type: 'button', className: 'wb-mini', onClick: function () { pickFolder('rootDir'); } }, '选择文件夹…'),
               h('button', { type: 'button', className: 'wb-mini', onClick: function () { openRootFolder(s.rootDir); } }, '打开文件夹'),
               h('button', { type: 'button', className: 'wb-mini', onClick: function () { applyRootDir(''); } }, '恢复默认目录'),
               h('span', { className: 'wb-set-hint' }, '当前：' + String(s.rootDir || DEFAULT_ROOT_LABEL))
@@ -1609,6 +1624,7 @@ window.__ModuleLoader__.load({
               onChange: function (ev) { patchSettings({ workDir: ev.target.value }); }
             }),
             h('div', { className: 'wb-set-row' },
+              h('button', { type: 'button', className: 'wb-mini', onClick: function () { pickFolder('workDir'); } }, '选择文件夹…'),
               h('span', { className: 'wb-set-hint' }, '「+单词」新建的会话都用这个 DSH 工作目录，不存在会自动创建')
             )
           ),          STORE.pendingRoot ? h('div', { className: 'wb-set-warn' },
