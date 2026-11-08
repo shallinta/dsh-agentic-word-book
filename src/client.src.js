@@ -1,5 +1,5 @@
 window.__ModuleLoader__.load({
-  id: '@local/word-book',
+  id: '@suiji-ai/dsh-agentic-word-book',
   factory(require) {
     const React = require('react');
     const h = React.createElement;

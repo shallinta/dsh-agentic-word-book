@@ -1,7 +1,8 @@
 {
-  "name": "@local/word-book",
-  "version": "0.2.0",
+  "name": "@suiji-ai/dsh-agentic-word-book",
+  "version": "1.0.0",
   "private": true,
+  "description": "随记单词本：DSH 侧栏单词本插件。词条、插图、发音全部保存在本地单词本根目录，支持按标签筛选、自定义插图、拼写练习、单词辨析，并自带一套供 AI 管理数据的技能。",
   "type": "module",
   "exports": {
     ".": "./index.js",
@@ -16,6 +17,14 @@
     "locale/*.json",
     "icon.svg",
     "skill-template.js"
+  ],
+  "keywords": [
+    "dsh",
+    "dsh-plugin",
+    "word-book",
+    "vocabulary",
+    "spaced-repetition",
+    "shuiji"
   ],
   "dsh": {
     "bundle": {
