@@ -1,0 +1,4 @@
+- insert:
+    - id: word-book
+      name: '@local/word-book'
+      config: {}
