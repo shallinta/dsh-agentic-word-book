@@ -269,6 +269,7 @@ window.__ModuleLoader__.load({
 .wb-set-close:hover{background:#F3EDFF;color:var(--wb-ink)}
 .wb-field{display:block;margin-bottom:16px}
 .wb-field > span{display:block;font-size:calc(12.5px * var(--wb-scale));color:var(--wb-muted);letter-spacing:.1em;margin-bottom:7px;font-weight:600}
+.wb-path{display:block;padding:9px 12px;border-radius:10px;background:#FAF7FF;border:1px solid var(--wb-line-strong);font-family:ui-monospace,Menlo,Consolas,monospace;font-size:calc(12.5px * var(--wb-scale));color:var(--wb-ink);line-height:1.55;word-break:break-all;user-select:all}
 .wb-input{width:100%;font:inherit;font-size:calc(15px * var(--wb-scale));color:var(--wb-ink);background:#FCFAFE;border:1px solid var(--wb-line-strong);border-radius:10px;padding:9px 12px}
 .wb-input::placeholder{color:#B9B2CC}
 .wb-input:focus{outline:2px solid var(--wb-sky);outline-offset:1px;border-color:var(--wb-sky)}
@@ -1601,28 +1602,16 @@ window.__ModuleLoader__.load({
           h('p', { className: 'wb-set-note' }, '首页卡片上右键可以给单词选标签（可多选）；顶部标签可快速筛选。删掉标签时，单词上的这个标签也会一起移除。'),
           h('div', { className: 'wb-field' },
             h('span', null, '单词本根目录'),
-            h('input', {
-              className: 'wb-input',
-              value: rootDraft || String(s.rootDir || ''),
-              placeholder: DEFAULT_ROOT_LABEL,
-              onChange: function (ev) { rootDraft = ev.target.value; emit(); },
-              onKeyDown: function (ev) { if (ev.key === 'Enter') { ev.preventDefault(); applyRootDir(rootDraft); } }
-            }),
+            h('code', { className: 'wb-path' }, String(s.rootDir || DEFAULT_ROOT_LABEL)),
             h('div', { className: 'wb-set-row' },
               h('button', { type: 'button', className: 'wb-mini', onClick: function () { pickFolder('rootDir'); } }, '选择文件夹…'),
               h('button', { type: 'button', className: 'wb-mini', onClick: function () { openRootFolder(s.rootDir); } }, '打开文件夹'),
-              h('button', { type: 'button', className: 'wb-mini', onClick: function () { applyRootDir(''); } }, '恢复默认目录'),
-              h('span', { className: 'wb-set-hint' }, '当前：' + String(s.rootDir || DEFAULT_ROOT_LABEL))
+              h('button', { type: 'button', className: 'wb-mini', onClick: function () { applyRootDir(''); } }, '恢复默认目录')
             )
           ),
           h('div', { className: 'wb-field' },
             h('span', null, '会话工作目录'),
-            h('input', {
-              className: 'wb-input',
-              value: String(s.workDir || ''),
-              placeholder: DEFAULT_WORKDIR_LABEL,
-              onChange: function (ev) { patchSettings({ workDir: ev.target.value }); }
-            }),
+            h('code', { className: 'wb-path' }, String(s.workDir || DEFAULT_WORKDIR_LABEL)),
             h('div', { className: 'wb-set-row' },
               h('button', { type: 'button', className: 'wb-mini', onClick: function () { pickFolder('workDir'); } }, '选择文件夹…'),
               h('span', { className: 'wb-set-hint' }, '「+单词」新建的会话都用这个 DSH 工作目录，不存在会自动创建')
