@@ -377,7 +377,8 @@ window.__ModuleLoader__.load({
     }
 
     function applyDiskWords(list) {
-      if (!Array.isArray(list) || !list.length) return false
+      /* 空词库也要接受：切到一个空目录时必须把旧卡片清掉 */
+      if (!Array.isArray(list)) return false
       const out = list.map(function (w) {
         return {
           slug: w.slug,
