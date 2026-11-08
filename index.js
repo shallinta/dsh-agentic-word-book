@@ -98,6 +98,30 @@ function tildePath(abs) {
   return '~/' + rel.split(path.sep).join('/')
 }
 
+/* 当前根目录的指针：settings.json 是跟着根目录走的，换目录后旧目录里的 settings.json
+   仍然指向老路径，所以需要一个位置固定的指针来决定启动时用哪个根目录。 */
+function rootPointerPath() {
+  return path.join(homedir(), '.dsh', 'suiji-word-book.root.json')
+}
+
+function readRootPointer() {
+  try {
+    const raw = readJson(rootPointerPath(), null)
+    const value = raw && typeof raw.rootDir === 'string' ? raw.rootDir.trim() : ''
+    return value ? resolveRoot(value) : ''
+  } catch {
+    return ''
+  }
+}
+
+function writeRootPointer(rootDir) {
+  try {
+    const file = rootPointerPath()
+    mkdirSync(path.dirname(file), { recursive: true })
+    writeJson(file, { rootDir: tildePath(rootDir), updatedAt: new Date().toISOString() })
+  } catch {}
+}
+
 function resolveRoot(raw) {
   const text = expandHome(raw)
   if (!text) return path.resolve(expandHome(DEFAULT_SETTINGS.rootDir))
@@ -291,12 +315,15 @@ export function apply(rootCtx) {
     }
   }
 
-  const currentRoot = () => loadState(resolveRoot(readJson(paths(resolveRoot(DEFAULT_SETTINGS.rootDir)).settings, {}).rootDir)).rootDir
-  const stateOf = () => {
+  /* 根目录判定顺序：指针文件 → 默认目录里的 settings.json → 内置默认 */
+  const bootRoot = () => {
+    const fromPointer = readRootPointer()
+    if (fromPointer) return fromPointer
     const bootSettings = readJson(paths(resolveRoot(DEFAULT_SETTINGS.rootDir)).settings, {})
-    const rootDir = resolveRoot(bootSettings.rootDir)
-    return loadState(rootDir)
+    return resolveRoot(bootSettings.rootDir || DEFAULT_SETTINGS.rootDir)
   }
+  const currentRoot = () => loadState(bootRoot()).rootDir
+  const stateOf = () => loadState(bootRoot())
 
   const disposers = []
 
@@ -308,8 +335,9 @@ export function apply(rootCtx) {
       try {
         const state = stateOf()
         const words = readJson(paths(state.rootDir).words, [])
-        sendJson(res, 200, { ok: true, state, words: Array.isArray(words) ? words : [], defaultRoot: DEFAULT_SETTINGS.rootDir,
-            defaultRoot: DEFAULT_SETTINGS.rootDir, skillDir: skillDir() })
+        sendJson(res, 200, { ok: true, state, words: Array.isArray(words) ? words : [],
+          rootPointer: rootPointerPath(),
+          defaultRoot: DEFAULT_SETTINGS.rootDir, skillDir: skillDir() })
       } catch (err) {
         sendJson(res, 200, { ok: false, error: String(err?.message ?? err) })
       }
@@ -347,6 +375,7 @@ export function apply(rootCtx) {
           if (occupied && args.migrate) copyTree(state.rootDir, target)
           mkdirSync(target, { recursive: true })
           const next = saveState(target, { settings: Object.assign({}, state.settings, { rootDir: target }) })
+          writeRootPointer(next.rootDir)
           return sendJson(res, 200, { ok: true, migrated: Boolean(occupied && args.migrate), state: next })
         }
 
