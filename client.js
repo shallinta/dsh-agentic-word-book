@@ -1225,7 +1225,8 @@ window.__ModuleLoader__.load({
       const target = STORE.pendingRoot;
       if (!target) return;
       STORE.pendingRoot = null;
-      hostOp('root', { rootDir: target, migrate: Boolean(migrate) }).then(applyHostResult);
+      /* 不迁移时用 force：直接把根目录切到目标，不再反复弹确认 */
+      hostOp('root', { rootDir: target, migrate: Boolean(migrate), force: !migrate }).then(applyHostResult);
     }
 
     function installSkill() {
@@ -1613,6 +1614,14 @@ window.__ModuleLoader__.load({
               h('button', { type: 'button', className: 'wb-mini', onClick: function () { applyRootDir(''); } }, '恢复默认目录')
             )
           ),
+          STORE.pendingRoot ? h('div', { className: 'wb-set-warn' },
+            h('b', null, '目标目录里已经有单词数据'),
+            h('p', null, '要把现有数据一起迁移到 ' + STORE.pendingRoot + ' 吗？'),
+            h('div', { className: 'wb-set-row' },
+              h('button', { type: 'button', className: 'wb-btn wb-btn--sm', onClick: function () { confirmRootDir(true); } }, '迁移过去'),
+              h('button', { type: 'button', className: 'wb-mini', onClick: function () { confirmRootDir(false); } }, '不迁移，直接用这个目录')
+            )
+          ) : null,
           h('div', { className: 'wb-field' },
             h('span', null, '会话工作目录'),
             h('code', { className: 'wb-path' }, String(s.workDirLabel || s.workDir || DEFAULT_WORKDIR_LABEL)),
@@ -1620,14 +1629,7 @@ window.__ModuleLoader__.load({
               h('button', { type: 'button', className: 'wb-mini', onClick: function () { pickFolder('workDir'); } }, '选择文件夹…'),
               h('span', { className: 'wb-set-hint' }, '「+单词」新建的会话都用这个 DSH 工作目录，不存在会自动创建')
             )
-          ),          STORE.pendingRoot ? h('div', { className: 'wb-set-warn' },
-            h('b', null, '目标目录里已经有单词数据'),
-            h('p', null, '要把现有数据一起迁移到 ' + STORE.pendingRoot + ' 吗？'),
-            h('div', { className: 'wb-set-row' },
-              h('button', { type: 'button', className: 'wb-btn wb-btn--sm', onClick: function () { confirmRootDir(true); } }, '迁移过去'),
-              h('button', { type: 'button', className: 'wb-mini', onClick: function () { confirmRootDir(false); } }, '不迁移，直接用空目录')
-            )
-          ) : null,
+          ),
           h('div', { className: 'wb-field' },
             h('span', null, '工作空间名称'),
             h('input', {

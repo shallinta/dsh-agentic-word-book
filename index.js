@@ -340,7 +340,8 @@ export function apply(rootCtx) {
         if (op === 'root') {
           const target = resolveRoot(args.rootDir)
           const occupied = target !== state.rootDir && hasData(target)
-          if (occupied && !args.migrate) {
+          /* force：用户选了「不迁移」，直接把根目录切过去（目标里的数据原样保留） */
+          if (occupied && !args.migrate && !args.force) {
             return sendJson(res, 200, { ok: true, needsMigration: true, target, state })
           }
           if (occupied && args.migrate) copyTree(state.rootDir, target)
