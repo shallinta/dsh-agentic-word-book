@@ -1182,6 +1182,8 @@ window.__ModuleLoader__.load({
     function applyHostResult(res, withSettings) {
       if (!res) return;
       if (res.state) applyHostState(res.state, withSettings);
+      /* 换根目录/恢复正常时宿主会带回新的词库 */
+      if (Array.isArray(res.words)) applyDiskWords(res.words);
       if (res.skillDir) STORE.settings.skillInstalled = true;
       rootDraft = STORE.settings.rootDir || '';
       emit();

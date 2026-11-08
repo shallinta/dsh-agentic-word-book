@@ -376,7 +376,13 @@ export function apply(rootCtx) {
           mkdirSync(target, { recursive: true })
           const next = saveState(target, { settings: Object.assign({}, state.settings, { rootDir: target }) })
           writeRootPointer(next.rootDir)
-          return sendJson(res, 200, { ok: true, migrated: Boolean(occupied && args.migrate), state: next })
+          return sendJson(res, 200, {
+            ok: true,
+            migrated: Boolean(occupied && args.migrate),
+            state: next,
+            /* 换了根目录必须把新目录的词库一起带回去，否则界面还是旧数据 */
+            words: readJson(paths(next.rootDir).words, []),
+          })
         }
 
         if (op === 'art') {
