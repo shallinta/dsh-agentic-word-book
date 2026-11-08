@@ -224,9 +224,12 @@ function installSkill(rootDir) {
 
 /* ---------------- 主入口 ---------------- */
 
-export function apply(ctx) {
-  const webServer = ctx.get('webServer')
-  if (!webServer || typeof webServer.register !== 'function') return
+export function apply(rootCtx) {
+  /* webServer 在插件激活时可能还没就绪：用 inject 等它可用再注册路由。
+     否则启动瞬间注册不到，面板会读不到数据、设定也存不进去。 */
+  rootCtx.inject(['webServer'], function (ctx) {
+    const webServer = ctx.get('webServer')
+    if (!webServer || typeof webServer.register !== 'function') return
 
   const trusted = (req, res) => {
     try {
@@ -441,5 +444,6 @@ export function apply(ctx) {
     for (const dispose of disposers) {
       try { if (typeof dispose === 'function') dispose() } catch {}
     }
+  })
   })
 }
