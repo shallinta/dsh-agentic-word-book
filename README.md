@@ -6,6 +6,12 @@ DSH 插件。左侧菜单一个书本图标，点开占据右侧整块面板：�
 > 核心设计：**代码与数据分离**。插件包只有功能代码（约 105 KB），词条、插图、发音全部住在
 > 「单词本根目录」里（默认 `~/Documents/dsh/suiji-word-book/`）。换电脑只需要搬走这个目录。
 
+[![GitHub](https://img.shields.io/badge/source-GitHub-181717?logo=github)](https://github.com/shallinta/dsh-agentic-word-book)
+
+```bash
+git clone git@github.com:shallinta/dsh-agentic-word-book.git
+```
+
 ---
 
 ## 功能
@@ -135,19 +141,3 @@ node build.mjs          # src/client.src.js -> client.js（只是复制，不含
 - 新会话默认权限是 `workspace-write`；插件建完会话后用 `permissionPresets.set(session, 'danger-full-access')`
   切成完全权限（可用 `settings.newSessionFullAccess=false` 关掉）
 
----
-
-## 已知限制
-
-- 面板是**浅色设计**（与网页版一致），不跟随 Harness 深色主题
-- 包体约 105 KB，不含任何单词数据；词库通过宿主路由按需读取
-- 根目录不可达时面板显示为空（目录被删、JSON 损坏、带 BOM 等；`readJson` 已容错 BOM）
-- 拼写练习用 `Tab` 做提示，会抢走焦点游标
-- 「+单词」建出的会话会占用一个工作空间会话记录
-
----
-
-## 变更要点
-
-- 1.0.0：包名改为 `@suiji-ai/dsh-agentic-word-book`；数据全部迁到根目录、每个单词一个资源目录
-  （`art` / `customArt` 双字段）；新增标签、自定义插图、单词辨析、+单词、管理技能
