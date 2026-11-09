@@ -35,7 +35,7 @@ const IMG_TYPES = {
   '.woff2': 'font/woff2',
 }
 
-const WORKDIR_DEFAULT = path.join(homedir(), 'Documents', 'deepseek-harness', 'suiji-word-book')
+const WORKDIR_DEFAULT = path.join(homedir(), 'Documents', 'deepseek-harness', 'suiji-ai')
 
 const DEFAULT_SETTINGS = {
   title: '随记单词本',
@@ -43,7 +43,7 @@ const DEFAULT_SETTINGS = {
   groupBy: 'date',
   order: 'desc',
   rootDir: '~/Documents/dsh/suiji-word-book',
-  workDir: '~/Documents/deepseek-harness/suiji-word-book',
+  workDir: '~/Documents/deepseek-harness/suiji-ai',
   workTitle: '随记',
   newSessionFullAccess: true,   // 用 +单词 新建的会话直接给完全权限
   showAddWord: false,

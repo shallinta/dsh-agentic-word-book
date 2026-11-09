@@ -429,7 +429,7 @@ window.__ModuleLoader__.load({
     const NOTES_URL = 'https://github.com/shallinta/dsh-agentic-notes';
 
     const DEFAULT_ROOT_LABEL = '~/Documents/dsh/suiji-word-book/';
-    const DEFAULT_WORKDIR_LABEL = '~/Documents/deepseek-harness/suiji-word-book/';
+    const DEFAULT_WORKDIR_LABEL = '~/Documents/deepseek-harness/suiji-ai/';
     const DEFAULT_SETTINGS = {
       title: '随记单词本',
       subtitle: '随手记一个词，看图、听音、拼一遍',
@@ -1774,7 +1774,7 @@ window.__ModuleLoader__.load({
                   alt: '随记单词本 logo'
                 })
               ),
-              h('span', { className: 'wb-settings-ver' }, '随记单词本 · v1.0.0')
+              h('span', { className: 'wb-settings-ver' }, '随记单词本 · v1.0.1')
             )
           ),
 
