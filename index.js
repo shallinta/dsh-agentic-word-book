@@ -31,7 +31,7 @@ const WORKDIR_DEFAULT = path.join(homedir(), 'Documents', 'deepseek-harness', 's
 
 const DEFAULT_SETTINGS = {
   title: '随记单词本',
-  subtitle: '点一个单词：看图片、听发音、读词组，再玩拼写游戏',
+  subtitle: '随手记一个词，看图、听音、拼一遍',
   groupBy: 'date',
   order: 'desc',
   rootDir: '~/Documents/dsh/suiji-word-book',
@@ -167,8 +167,11 @@ function saveState(rootDir, patch) {
   const current = loadState(rootDir)
   const merged = Object.assign({}, current.settings, patch.settings || {}, { rootDir })
   const toDisk = Object.assign({}, merged)
+  /* 这些是运行时算出来的展示/状态字段，不该落盘 */
   delete toDisk.rootDirLabel
   delete toDisk.workDirLabel
+  delete toDisk.rootDirExists
+  delete toDisk.workDirExists
   toDisk.rootDir = tildePath(merged.rootDir)
   toDisk.workDir = tildePath(resolveRoot(merged.workDir || DEFAULT_SETTINGS.workDir))
   writeJson(p.settings, toDisk)
