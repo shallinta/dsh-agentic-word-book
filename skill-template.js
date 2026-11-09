@@ -57,7 +57,7 @@ ${rootDir}
 ## 常见操作
 
 - **改标题/副标题/分组**：改 \`settings.json\`，不要动 \`rootDir\` / \`workDir\`
-- **新建会话**：DSH 工作目录用 \`workDir\`（默认 \`~/Documents/deepseek-harness/suiji-word-book/\`），不存在就创建；工作空间名用 \`workTitle\`
+- **新建会话**：DSH 工作目录用 \`workDir\`（默认 \`~/Documents/deepseek-harness/suiji-word-book/\`），不存在就创建；工作空间名用 \`workTitle\`（默认「随记」）
 - **打标签**：先把新标签加进 \`meta.json\` 的 \`tagList\`，再写进 \`tags[slug]\`
 - **换插图**：图片放进 \`words/<slug>/\`，文件名以 \`custom-\` 开头（**不要覆盖 \`art\` 指向的默认图**），再把相对路径写进该词条的 \`customArt\`
 - **恢复默认插图**：把 \`customArt\` 置成空串即可；默认图文件不要删

@@ -341,6 +341,7 @@ window.__ModuleLoader__.load({
 
 /* 打赏下面的随记推荐 */
 .wb-cross{margin-top:16px}
+.wb-cross-title{margin:0 0 8px;font-size:calc(13.5px * var(--wb-scale));font-weight:700;color:var(--wb-ink)}
 .wb-cross-desc{margin:0 0 10px;font-size:calc(12.5px * var(--wb-scale));line-height:1.7;color:var(--wb-muted)}
 .wb-cross-desc b{color:var(--wb-ink)}
 .wb-cross-acts{display:flex;align-items:center;gap:10px;flex-wrap:wrap}
@@ -1922,7 +1923,7 @@ window.__ModuleLoader__.load({
               h('input', {
                 className: 'wb-input',
                 value: String(s.workTitle || ''),
-                placeholder: '随记单词本',
+                placeholder: '随记',
                 onChange: function (ev) { patchSettings({ workTitle: ev.target.value }); }
               }),
               h('div', { className: 'wb-set-row' },
@@ -1989,6 +1990,7 @@ window.__ModuleLoader__.load({
               )
             ),
             h('div', { className: 'wb-cross' },
+              h('div', { className: 'wb-cross-title' }, '☆随记系列插件☆'),
               h('p', { className: 'wb-cross-desc' },
                 h('b', null, '「随记」'),
                 '：一个本地优先的 DSH 笔记插件，随手记一句，AI 帮你归档、整理成文章；和单词本一样，数据都存在本地。'

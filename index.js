@@ -43,7 +43,7 @@ const DEFAULT_SETTINGS = {
   order: 'desc',
   rootDir: '~/Documents/dsh/suiji-word-book',
   workDir: '~/Documents/deepseek-harness/suiji-word-book',
-  workTitle: '随记单词本',
+  workTitle: '随记',
   newSessionFullAccess: true,   // 用 +单词 新建的会话直接给完全权限
   showAddWord: false,
   skillInstalled: false,
@@ -207,7 +207,7 @@ function saveState(rootDir, patch) {
 async function ensureWorkspace(ctx, settings, workDir) {
   const registry = ctx.get('workspaceRegistry')
   if (!registry || typeof registry.create !== 'function') return undefined
-  const title = String((settings && settings.workTitle) || '').trim() || '随记单词本'
+  const title = String((settings && settings.workTitle) || '').trim() || '随记'
   let ws
   try {
     ws = await registry.create(workDir, title)
