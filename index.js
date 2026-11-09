@@ -35,6 +35,17 @@ const IMG_TYPES = {
   '.woff2': 'font/woff2',
 }
 
+const AUDIO_TYPES = {
+  '.mp3': 'audio/mpeg',
+  '.m4a': 'audio/mp4',
+  '.aac': 'audio/aac',
+  '.ogg': 'audio/ogg',
+  '.oga': 'audio/ogg',
+  '.flac': 'audio/flac',
+  '.webm': 'audio/webm',
+  '.wav': 'audio/wav',
+}
+
 const WORKDIR_DEFAULT = path.join(homedir(), 'Documents', 'deepseek-harness', 'suiji-ai')
 
 const DEFAULT_SETTINGS = {
@@ -48,6 +59,12 @@ const DEFAULT_SETTINGS = {
   newSessionFullAccess: true,   // 用 +单词 新建的会话直接给完全权限
   showAddWord: false,
   skillInstalled: false,
+  titleAlign: 'center',     // 首页标题对齐：left / center / right
+  subtitleAlign: 'center',  // 副标题对齐
+  titleColor: '#3a3550',    // 首页标题颜色
+  subtitleColor: '#615c7a', // 副标题颜色
+  backgroundImage: '',      // 首页背景图（相对根目录）
+  backgroundOpacity: 0.42,  // 背景图透明度 0~1
 }
 
 function sendJson(res, code, value) {
@@ -307,6 +324,56 @@ function extOf(mime) {
 const CUSTOM_ART_EXTS = ['.png', '.jpg', '.jpeg', '.webp', '.gif', '.svg']
 
 /* 把自定义插图的字节落进 words/<slug>/，返回新的 customArt 路径 */
+function audioExtOf(mime, name) {
+  const m = String(mime || '').toLowerCase()
+  if (/mpeg|mp3/.test(m)) return '.mp3'
+  if (/m4a|mp4|aac/.test(m)) return '.m4a'
+  if (/ogg/.test(m)) return '.ogg'
+  if (/flac/.test(m)) return '.flac'
+  if (/webm/.test(m)) return '.webm'
+  if (/wav/.test(m)) return '.wav'
+  const byName = path.extname(String(name || '')).toLowerCase()
+  return AUDIO_TYPES[byName] ? byName : '.wav'
+}
+
+/* 自定义主音频：和插图一样放 words/<slug>/，字段用 customWordAudio */
+function saveCustomAudio(rootDir, slug, buffer, mime, name) {
+  const wordsFile = paths(rootDir).words
+  const list = readJson(wordsFile, [])
+  const target = list.find(function (w) { return w.slug === slug })
+  if (!target) return { ok: false, error: 'unknown word' }
+  const dir = path.join(rootDir, 'words', slug)
+  mkdirSync(dir, { recursive: true })
+  for (const old of readdirSync(dir)) {
+    if (old.indexOf('custom-audio-') === 0) {
+      try { rmSync(path.join(dir, old), { force: true }) } catch {}
+    }
+  }
+  const ext = audioExtOf(mime, name)
+  const file = 'custom-audio-' + Date.now().toString(36) + ext
+  writeFileSync(path.join(dir, file), buffer)
+  target.customWordAudio = 'words/' + slug + '/' + file
+  writeJson(wordsFile, list)
+  return { ok: true, file: target.customWordAudio, words: list }
+}
+
+/* 首页背景图：放在根目录 background-<ts>.<ext>，旧图删掉 */
+function saveBackground(rootDir, buffer, mime, name) {
+  let ext = extOf(String(mime || ''))
+  if (!mime || mime === 'application/octet-stream') {
+    const byName = path.extname(String(name || '')).toLowerCase()
+    if (CUSTOM_ART_EXTS.indexOf(byName) >= 0) ext = byName
+  }
+  for (const old of readdirSync(rootDir)) {
+    if (old.indexOf('background-') === 0) {
+      try { rmSync(path.join(rootDir, old), { force: true }) } catch {}
+    }
+  }
+  const file = 'background-' + Date.now().toString(36) + ext
+  writeFileSync(path.join(rootDir, file), buffer)
+  return file
+}
+
 function saveCustomArt(rootDir, slug, buffer, mime, name) {
   const wordsFile = paths(rootDir).words
   const list = readJson(wordsFile, [])
@@ -586,6 +653,34 @@ export function apply(rootCtx) {
           })
         }
 
+        if (op === 'clear-background') {
+          for (const old of readdirSync(state.rootDir)) {
+            if (old.indexOf('background-') === 0) {
+              try { rmSync(path.join(state.rootDir, old), { force: true }) } catch {}
+            }
+          }
+          const next = saveState(state.rootDir, { settings: Object.assign({}, state.settings, { backgroundImage: '' }) })
+          return sendJson(res, 200, { ok: true, state: next })
+        }
+
+        if (op === 'clear-word-audio') {
+          const slug = String(args.slug || '').trim().toLowerCase()
+          if (!/^[a-z][a-z'-]*$/.test(slug)) return sendJson(res, 200, { ok: false, error: 'bad slug' })
+          const wordsFile = paths(state.rootDir).words
+          const list = readJson(wordsFile, [])
+          const target = list.find(function (w) { return w.slug === slug })
+          if (!target) return sendJson(res, 200, { ok: false, error: 'unknown word' })
+          const dir = path.join(state.rootDir, 'words', slug)
+          for (const old of readdirSync(dir)) {
+            if (old.indexOf('custom-audio-') === 0) {
+              try { rmSync(path.join(dir, old), { force: true }) } catch {}
+            }
+          }
+          target.customWordAudio = ''
+          writeJson(wordsFile, list)
+          return sendJson(res, 200, { ok: true, words: list })
+        }
+
         if (op === 'delete-word') {
           const slug = String(args.slug || '').trim().toLowerCase()
           if (!/^[a-z][a-z'-]*$/.test(slug)) return sendJson(res, 200, { ok: false, error: 'bad slug' })
@@ -619,7 +714,7 @@ export function apply(rootCtx) {
           const signal = new AbortController().signal
           const ws = await ensureWorkspace(ctx, state.settings, workDir)
           const created = await controller.create(ws ? { workspaceId: ws.id } : { cwd: workDir })
-          const message = '请使用 /suiji-word-book 技能，为单词本新增单词卡。用户输入：' + input +
+          const message = '请使用 /suiji-word-book 技能，根据用户输入为单词本新增单词卡。用户输入：' + input +
             '。单词本根目录是 ' + state.rootDir + '。每张卡要有音标、词性、中文释义、英文释义、5 条词组、例句和一张 320x240 插图，并生成发音。'
           /* 新会话默认工作在 workspace-write，写 words.json / 音频会被逐次审批；
              这里直接切到完全权限（可用 settings.newSessionFullAccess=false 关掉） */
@@ -676,7 +771,7 @@ export function apply(rootCtx) {
           return res.end()
         }
         const ext = path.extname(name).toLowerCase()
-        const type = IMG_TYPES[ext] || (ext === '.wav' ? 'audio/wav' : 'application/octet-stream')
+        const type = IMG_TYPES[ext] || AUDIO_TYPES[ext] || 'application/octet-stream'
         res.writeHead(200, { 'Content-Type': type, 'Cache-Control': 'private, max-age=60' })
         res.end(readFileSync(file))
       } catch {
@@ -702,6 +797,54 @@ export function apply(rootCtx) {
         const buffer = await readRaw(req, MAX_UPLOAD)
         if (!buffer.length) return sendJson(res, 400, { ok: false, error: 'empty body' })
         return sendJson(res, 200, saveCustomArt(stateOf().rootDir, slug, buffer, mime, name))
+      } catch (err) {
+        const message = String((err && err.message) || err)
+        return sendJson(res, /too large/.test(message) ? 413 : 400, { ok: false, error: message })
+      }
+    },
+  }))
+
+  /* 自定义主音频上传：原始字节，存 words/<slug>/custom-audio-<ts>.<ext> */
+  disposers.push(webServer.register({
+    kind: 'exact',
+    path: BASE + '/audio',
+    handler: async (req, res) => {
+      if (!trusted(req, res)) return
+      try {
+        if (req.method !== 'POST') return sendJson(res, 405, { ok: false, error: 'POST only' })
+        const url = new URL(req.url, 'http://localhost')
+        const slug = String(url.searchParams.get('slug') || '').trim().toLowerCase()
+        if (!/^[a-z][a-z'-]*$/.test(slug)) return sendJson(res, 400, { ok: false, error: 'bad slug' })
+        const name = String(url.searchParams.get('name') || '')
+        const mime = String(req.headers['content-type'] || '').split(';')[0].trim().toLowerCase()
+        const buffer = await readRaw(req, MAX_UPLOAD)
+        if (!buffer.length) return sendJson(res, 400, { ok: false, error: 'empty body' })
+        return sendJson(res, 200, saveCustomAudio(stateOf().rootDir, slug, buffer, mime, name))
+      } catch (err) {
+        const message = String((err && err.message) || err)
+        return sendJson(res, /too large/.test(message) ? 413 : 400, { ok: false, error: message })
+      }
+    },
+  }))
+
+  /* 首页背景图上传：存根目录 background-<ts>.<ext>，写进 settings.backgroundImage */
+  disposers.push(webServer.register({
+    kind: 'exact',
+    path: BASE + '/background',
+    handler: async (req, res) => {
+      if (!trusted(req, res)) return
+      try {
+        if (req.method !== 'POST') return sendJson(res, 405, { ok: false, error: 'POST only' })
+        const mime = String(req.headers['content-type'] || '').split(';')[0].trim().toLowerCase()
+        if (mime && mime !== 'application/octet-stream' && mime.indexOf('image/') !== 0) return sendJson(res, 400, { ok: false, error: 'image only' })
+        const url = new URL(req.url, 'http://localhost')
+        const name = String(url.searchParams.get('name') || '')
+        const state = stateOf()
+        const buffer = await readRaw(req, MAX_UPLOAD)
+        if (!buffer.length) return sendJson(res, 400, { ok: false, error: 'empty body' })
+        const rel = saveBackground(state.rootDir, buffer, mime, name)
+        const next = saveState(state.rootDir, { settings: Object.assign({}, state.settings, { backgroundImage: rel }) })
+        return sendJson(res, 200, { ok: true, state: next })
       } catch (err) {
         const message = String((err && err.message) || err)
         return sendJson(res, /too large/.test(message) ? 413 : 400, { ok: false, error: message })

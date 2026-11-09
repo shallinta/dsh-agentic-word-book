@@ -52,15 +52,18 @@ ${rootDir}
 - \`created\`：ISO 时间，决定首页排序
 - \`art\`：**默认插图**的相对路径（相对根目录），始终指向 \`words/<slug>/...\`
 - \`customArt\`：**自定义插图**的相对路径；有值就显示它，空串就显示 \`art\`
+- \`customWordAudio\`：**自定义主音频**的相对路径；有值就播它，空串就播 \`wordAudio\`；文件放 \`words/<slug>/custom-audio-*\`
 - 其余 \`audio\` 字段同理，都是相对根目录的路径
 - 一个词可以有多个词性/释义，放在 \`senses\` 数组里：每个 sense 有自己的 \`pos\` / \`zh\` / \`en\` / \`sentence\`，例句音频从 \`sentence-1.wav\` 起按序号命名；没有 \`senses\` 时用旧的单套字段（\`sentence\` 对应 \`sentence.wav\`）
 
 ## 常见操作
 
-- **改标题/副标题/分组**：改 \`settings.json\`，不要动 \`rootDir\` / \`workDir\`
+- **改标题/副标题/分组**：改 \`settings.json\`，不要动 \`rootDir\` / \`workDir\`；标题和副标题的对齐分别用 \`titleAlign\` / \`subtitleAlign\`，取值 \`left\` / \`center\` / \`right\`；颜色用 \`titleColor\` / \`subtitleColor\`，写 \`#rrggbb\`
 - **新建会话**：DSH 工作目录用 \`workDir\`（默认 \`~/Documents/deepseek-harness/suiji-ai/\`），不存在就创建；工作空间名用 \`workTitle\`（默认「随记」）
 - **打标签**：先把新标签加进 \`meta.json\` 的 \`tagList\`，再写进 \`tags[slug]\`
 - **换插图**：用户明确要给某张已有词卡换图时才用。图片放进 \`words/<slug>/\`，文件名以 \`custom-\` 开头（**不要覆盖 \`art\` 指向的默认图**），再把相对路径写进该词条的 \`customArt\`
+- **换主音频**：音频放进 \`words/<slug>/\`，文件名以 \`custom-audio-\` 开头，再把相对路径写进该词条的 \`customWordAudio\`
+- **恢复默认主音频**：把 \`customWordAudio\` 置成空串即可；默认音频文件不要删
 - **恢复默认插图**：把 \`customArt\` 置成空串即可；默认图文件不要删
 - **新词卡的插图**：画好后直接作为默认插图（覆盖 \`words/<slug>/<slug>.svg\` 或改 \`art\` 指向新文件），\`customArt\` 保持空串
 - **加单词**：见 \`add-word.md\`（用 \`scripts/create-word.mjs\` 建占位词条、\`scripts/make-audio.mjs\` 生成发音，macOS / Windows 通用）
@@ -118,7 +121,7 @@ node "<skill目录>/scripts/create-word.mjs" --root "${rootDir}" --word "apple"
 ]
 \`\`\`
 
-\`audio\` 留空串也行，下一步生成后会自动写回。\`art\` 指向默认插图，\`customArt\` 留空串；\`created\` 用脚本写入的时间，不要改。
+\`audio\` 留空串也行，下一步生成后会自动写回。\`art\` 指向默认插图，\`customArt\` 留空串；\`customWordAudio\` 也留空串；\`created\` 用脚本写入的时间，不要改。
 
 ## 3. 画插图
 

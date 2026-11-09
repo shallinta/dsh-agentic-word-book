@@ -53,11 +53,19 @@ window.__ModuleLoader__.load({
 .wb-root :focus-visible{outline:3px solid var(--wb-sky);outline-offset:3px;border-radius:10px}
 .wb-root input:focus-visible,.wb-root select:focus-visible,.wb-root textarea:focus-visible{outline:none}
 
-.wb-scroll{flex:1 1 auto;min-height:0;overflow-y:auto;overflow-x:hidden;overscroll-behavior:contain}
+.wb-bg{position:absolute;inset:0;z-index:0;pointer-events:none;background-size:cover;background-position:center;background-repeat:no-repeat;transition:opacity .16s}
+.wb-scroll{flex:1 1 auto;min-height:0;overflow-y:auto;overflow-x:hidden;overscroll-behavior:contain;position:relative;z-index:1}
 .wb-fab{position:absolute;right:24px;bottom:24px;z-index:15;width:44px;height:44px;border-radius:50%;display:grid;place-items:center;color:#fff;background:linear-gradient(180deg,#FFA177,var(--wb-coral));box-shadow:0 14px 28px -12px rgba(242,112,63,.9);transition:transform .16s,filter .16s}
 .wb-fab:hover{transform:translateY(-2px);filter:brightness(1.03)}
 .wb-fab:active{transform:translateY(0) scale(.97)}
 .wb-wrap{width:100%;max-width:1200px;margin:0 auto;padding:10px 12px 40px}
+.wb-wrap--entry{height:100%;display:flex;flex-direction:column;padding-bottom:14px}
+.wb-wrap--entry > .wb-topbar{flex:none}
+.wb-wrap--entry > .wb-learn,.wb-wrap--entry > .wb-test{flex:1 1 auto;min-height:0;overflow:hidden;display:flex;flex-direction:column}
+.wb-learn-top{flex:none}
+.wb-learn-scroll,.wb-test-scroll{flex:1 1 auto;min-height:0;overflow-y:auto;overscroll-behavior:contain}
+.wb-scroll--entry{overflow-y:hidden}
+.wb-range{width:180px;accent-color:var(--wb-coral);cursor:pointer}
 
 /* ---------- 顶栏：返回 + 主操作 ---------- */
 .wb-topbar{display:flex;align-items:center;justify-content:space-between;gap:12px;margin-bottom:12px}
@@ -302,6 +310,9 @@ window.__ModuleLoader__.load({
 .wb-add-ico:hover .lbl,.wb-add-ico:focus-visible .lbl{max-width:72px;opacity:1;margin-left:7px}
 .wb-mask{position:absolute;inset:0;z-index:20;background:rgba(58,53,80,.32);backdrop-filter:blur(3px);display:grid;place-items:center;padding:24px;animation:wb-fade .18s ease-out}
 .wb-settings{width:min(600px,100%);max-height:100%;overflow-y:auto;overflow-x:hidden;overscroll-behavior:contain;background:var(--wb-card);border-radius:22px;box-shadow:0 30px 60px -30px rgba(80,60,120,.6);padding:20px 24px 22px}
+.wb-settings--fixed{display:flex;flex-direction:column;overflow:hidden;padding:0}
+.wb-settings--fixed .wb-set-head{flex:none;margin:0;padding:18px 24px 14px;background:var(--wb-card);border-bottom:1px solid var(--wb-line);z-index:2}
+.wb-settings-body{flex:1 1 auto;min-height:0;overflow-y:auto;overflow-x:hidden;overscroll-behavior:contain;padding:16px 24px 22px}
 .wb-set-head{display:flex;align-items:center;justify-content:space-between;margin-bottom:16px}
 .wb-set-head h2{margin:0;display:flex;align-items:center;gap:9px;font-size:calc(15.5px * var(--wb-scale));font-weight:600}
 .wb-set-mark{width:22px;height:22px;display:block;flex:none;filter:brightness(0)}
@@ -333,6 +344,17 @@ window.__ModuleLoader__.load({
 .wb-set-section .wb-set-row{margin-top:8px}
 
 .wb-field{display:block;margin-bottom:16px}
+.wb-field-inline{display:flex;align-items:stretch;gap:8px}
+.wb-field-inline .wb-input{flex:1 1 auto;min-width:0}
+.wb-color{flex:none;align-self:stretch;display:flex;align-items:center;justify-content:center;width:48px;border:1px solid var(--wb-line-strong);border-radius:12px;background:#FAF7FF;padding:0}
+.wb-color input{width:24px;height:24px;border:0;border-radius:50%;padding:0;background:#FCFAFE;cursor:pointer;appearance:none;-webkit-appearance:none;overflow:hidden}
+.wb-color input::-webkit-color-swatch-wrapper{padding:0;border-radius:50%}
+.wb-color input::-webkit-color-swatch{border:0;border-radius:50%}
+.wb-align{display:inline-flex;flex:none;align-items:center;gap:2px;background:#FAF7FF;border:1px solid var(--wb-line-strong);border-radius:12px;padding:2px}
+.wb-align-btn{width:30px;height:30px;border-radius:9px;display:grid;place-items:center;color:var(--wb-ink-soft);transition:background .14s,color .14s}
+.wb-align-btn:hover{background:#F3EDFF;color:var(--wb-ink)}
+.wb-align-btn[aria-pressed="true"]{background:linear-gradient(180deg,#FFA177,var(--wb-coral));color:#fff}
+.wb-align-btn svg{display:block}
 .wb-field > span{display:block;font-size:calc(12.5px * var(--wb-scale));color:var(--wb-muted);letter-spacing:.1em;margin-bottom:7px;font-weight:600}
 .wb-path{display:block;padding:9px 12px;border-radius:10px;background:#FAF7FF;border:1px solid var(--wb-line-strong);font-family:ui-monospace,Menlo,Consolas,monospace;font-size:calc(12.5px * var(--wb-scale));color:var(--wb-ink);line-height:1.55;word-break:break-all;user-select:all}
 .wb-input{width:100%;font:inherit;font-size:calc(15px * var(--wb-scale));color:var(--wb-ink);background:#FCFAFE;border:1px solid var(--wb-line-strong);border-radius:10px;padding:9px 12px}
@@ -350,7 +372,6 @@ window.__ModuleLoader__.load({
 .wb-set-warn{margin:8px 0 10px;padding:10px 12px;border-radius:12px;background:#FFF1EC;border:1px solid #FFD8CC;color:var(--wb-ink-soft);font-size:calc(12.5px * var(--wb-scale));line-height:1.65}
 .wb-set-warn b{display:block;margin-bottom:2px;color:var(--wb-coral-2);font-size:calc(13px * var(--wb-scale))}
 .wb-set-warn p{margin:0}
-.wb-set-foot{display:flex;align-items:center;justify-content:space-between;gap:10px;margin-top:4px;padding-top:14px;border-top:1px solid var(--wb-line)}
 
 /* 打赏：两张收款码并排，窄了自动换行 */
 .wb-donate{display:flex;flex-wrap:wrap;align-items:flex-start;gap:18px;padding:2px 0 4px}
@@ -441,6 +462,19 @@ window.__ModuleLoader__.load({
       'Comic Sans MS': `"Comic Sans MS", "WB Comic Neue", cursive`,
       'Caveat': `"WB Caveat", "Caveat", cursive`
     };
+    function pickColor(v, fallback) {
+      const text = String(v || '');
+      return /^#[0-9a-fA-F]{6}$/.test(text) ? text.toLowerCase() : fallback;
+    }
+
+    function clamp01(v) {
+      const n = Number(v);
+      if (!isFinite(n)) return DEFAULT_SETTINGS.backgroundOpacity;
+      if (n < 0) return 0;
+      if (n > 1) return 1;
+      return n;
+    }
+
     function pickFont(value, fallback) {
       return FONT_CHOICES.indexOf(value) >= 0 ? value : fallback;
     }
@@ -459,6 +493,12 @@ window.__ModuleLoader__.load({
       skillInstalled: false,
       newSessionFullAccess: true,
       showMastered: false,
+      titleAlign: 'center',        // left | center | right
+      subtitleAlign: 'center',     // 和标题分开配置
+      titleColor: '#3a3550',
+      subtitleColor: '#615c7a',
+      backgroundImage: '',         // 相对根目录的背景图
+      backgroundOpacity: 0.42,
       fontWord: DEFAULT_WORD_FONT,
       fontPhrase: DEFAULT_PHRASE_FONT
     };
@@ -475,6 +515,12 @@ window.__ModuleLoader__.load({
           out.fontWord = pickFont(raw.fontWord, DEFAULT_WORD_FONT);
           out.fontPhrase = pickFont(raw.fontPhrase, DEFAULT_PHRASE_FONT);
           if (typeof raw.showMastered === 'boolean') out.showMastered = raw.showMastered;
+          if (raw.titleAlign === 'left' || raw.titleAlign === 'center' || raw.titleAlign === 'right') out.titleAlign = raw.titleAlign;
+          if (raw.subtitleAlign === 'left' || raw.subtitleAlign === 'center' || raw.subtitleAlign === 'right') out.subtitleAlign = raw.subtitleAlign;
+          out.titleColor = pickColor(raw.titleColor, DEFAULT_SETTINGS.titleColor);
+          out.subtitleColor = pickColor(raw.subtitleColor, DEFAULT_SETTINGS.subtitleColor);
+          if (typeof raw.backgroundImage === 'string') out.backgroundImage = raw.backgroundImage;
+          if (typeof raw.backgroundOpacity === 'number' && isFinite(raw.backgroundOpacity)) out.backgroundOpacity = clamp01(raw.backgroundOpacity);
         }
       } catch (e) {}
       return out;
@@ -570,7 +616,8 @@ window.__ModuleLoader__.load({
           art: assetUrl('art', w.art),            // 默认插图资源路径
           customArt: assetUrl('art', w.customArt), // 自定义插图资源路径（空串表示没有）
           artAlt: w.artAlt || w.word,
-          wordAudio: assetUrl('audio', w.wordAudio),
+          wordAudio: assetUrl('audio', w.customWordAudio || w.wordAudio),  // 有自定义主音频就用它
+          customWordAudio: assetUrl('audio', w.customWordAudio),
           phrases: (w.phrases || []).map(function (p) {
             return { en: p.en, zh: p.zh, audio: assetUrl('audio', p.audio) }
           }),
@@ -596,6 +643,12 @@ window.__ModuleLoader__.load({
       STORE.settings.fontWord = pickFont(STORE.settings.fontWord, DEFAULT_WORD_FONT);
       STORE.settings.fontPhrase = pickFont(STORE.settings.fontPhrase, DEFAULT_PHRASE_FONT);
       STORE.settings.showMastered = STORE.settings.showMastered === true;
+      if (['left', 'center', 'right'].indexOf(STORE.settings.titleAlign) < 0) STORE.settings.titleAlign = 'center';
+      if (['left', 'center', 'right'].indexOf(STORE.settings.subtitleAlign) < 0) STORE.settings.subtitleAlign = 'center';
+      STORE.settings.titleColor = pickColor(STORE.settings.titleColor, DEFAULT_SETTINGS.titleColor);
+      STORE.settings.subtitleColor = pickColor(STORE.settings.subtitleColor, DEFAULT_SETTINGS.subtitleColor);
+      STORE.settings.backgroundImage = typeof STORE.settings.backgroundImage === 'string' ? STORE.settings.backgroundImage : '';
+      STORE.settings.backgroundOpacity = clamp01(STORE.settings.backgroundOpacity);
       STORE.skillStale = state.skillStale === true;
     }
 
@@ -1397,11 +1450,6 @@ window.__ModuleLoader__.load({
       saveSettings();
       emit();
     }
-    function resetSettings() {
-      Object.assign(STORE.settings, DEFAULT_SETTINGS);
-      saveSettings();
-      emit();
-    }
     function openSettings() { STORE.settingsOpen = true; emit(); }
     function closeSettings() { STORE.settingsOpen = false; emit(); }
 
@@ -1592,6 +1640,87 @@ window.__ModuleLoader__.load({
       };
       input.click();
     }
+    /* ---------- 自定义主音频 ---------- */
+    const MAX_AUDIO_BYTES = 25 * 1024 * 1024;
+
+    function uploadWordAudio(slug, file) {
+      if (!file) return;
+      if (file.size > MAX_AUDIO_BYTES) { showNotice('音频太大了，上限 25 MB'); return; }
+      if (typeof fetch !== 'function') return;
+      const qs = '?slug=' + encodeURIComponent(slug) + '&name=' + encodeURIComponent(file.name || '');
+      fetch(HOST_BASE + '/audio' + qs, {
+        method: 'POST',
+        headers: { 'content-type': file.type || 'application/octet-stream' },
+        body: file
+      })
+        .then(function (r) { return r.ok ? r.json() : null; })
+        .then(function (res) {
+          if (res && res.words) applyDiskWords(res.words);
+          applyHostResult(res);
+          emit();
+        })
+        .catch(function () { showNotice('音频没传上去，再试一次'); });
+    }
+
+    /* 打开系统文件选择框，选完把音频交给宿主写进词条目录 */
+    function pickWordAudio(slug) {
+      if (typeof document === 'undefined') return;
+      const input = document.createElement('input');
+      input.type = 'file';
+      input.accept = 'audio/*';
+      input.onchange = function () {
+        const file = input.files && input.files[0];
+        if (!file) return;
+        uploadWordAudio(slug, file);
+      };
+      input.click();
+    }
+
+    function clearWordAudio(slug) {
+      hostOp('clear-word-audio', { slug: slug }).then(function (res) {
+        if (res && res.words) applyDiskWords(res.words);
+        emit();
+      });
+    }
+
+    /* ---------- 首页背景图 ---------- */
+    function uploadBackground(file) {
+      if (!file) return;
+      if (file.size > MAX_ART_BYTES) { showNotice('图片太大了，上限 25 MB'); return; }
+      if (typeof fetch !== 'function') return;
+      const qs = '?name=' + encodeURIComponent(file.name || '');
+      fetch(HOST_BASE + '/background' + qs, {
+        method: 'POST',
+        headers: { 'content-type': file.type || 'application/octet-stream' },
+        body: file
+      })
+        .then(function (r) { return r.ok ? r.json() : null; })
+        .then(function (res) {
+          if (res && res.state) { applyHostState(res.state, true); emit(); }
+        })
+        .catch(function () { showNotice('背景图没传上去，再试一次'); });
+    }
+
+    function pickBackground() {
+      if (typeof document === 'undefined') return;
+      const input = document.createElement('input');
+      input.type = 'file';
+      input.accept = 'image/*';
+      input.onchange = function () {
+        const file = input.files && input.files[0];
+        if (!file) return;
+        uploadBackground(file);
+      };
+      input.click();
+    }
+
+    function clearBackground() {
+      hostOp('clear-background', {}).then(function (res) {
+        if (res && res.state) applyHostState(res.state, true);
+        emit();
+      });
+    }
+
     /* ---------- 新增单词（交给技能去做） ---------- */
     let addWordDraft = '';
 
@@ -1842,8 +1971,8 @@ window.__ModuleLoader__.load({
     function Hero() {
       const s = STORE.settings;
       return h('div', { className: 'wb-hero' },
-        h('h1', null, s.title || DEFAULT_SETTINGS.title),
-        s.subtitle ? h('p', null, s.subtitle) : null
+        h('h1', { style: { textAlign: s.titleAlign || 'center', color: s.titleColor } }, s.title || DEFAULT_SETTINGS.title),
+        s.subtitle ? h('p', { style: { textAlign: s.subtitleAlign || 'center', color: s.subtitleColor } }, s.subtitle) : null
       );
     }
 
@@ -1890,6 +2019,49 @@ window.__ModuleLoader__.load({
       );
     }
 
+    /* 文字对齐图标：三根横线，按左/中/右排 */
+    function AlignIcon(props) {
+      const kind = props.kind;
+      const widths = [14, 9, 12];
+      return h('svg', {
+        width: 16, height: 16, viewBox: '0 0 20 20', fill: 'none',
+        stroke: 'currentColor', strokeWidth: 1.8, strokeLinecap: 'round',
+        'aria-hidden': true
+      },
+        widths.map(function (w, i) {
+          const y = 5 + i * 5;
+          const x = kind === 'left' ? 3 : (kind === 'right' ? 17 - w : 10 - w / 2);
+          return h('line', { key: 'l' + i, x1: x, y1: y, x2: x + w, y2: y });
+        })
+      );
+    }
+
+    /* 标题/副标题后面的对齐切换 */
+    function AlignGroup(props) {
+      const options = [
+        { v: 'left', label: '左对齐' },
+        { v: 'center', label: '居中' },
+        { v: 'right', label: '右对齐' }
+      ];
+      return h('div', { className: 'wb-align', role: 'group', 'aria-label': '对齐方式' },
+        options.map(function (o) {
+          return h('button', {
+            key: o.v,
+            type: 'button',
+            className: 'wb-align-btn',
+            title: o.label,
+            'aria-label': o.label,
+            'aria-pressed': props.value === o.v ? 'true' : 'false',
+            onClick: function () {
+              const patch = {};
+              patch[props.field] = o.v;
+              patchSettings(patch);
+            }
+          }, h(AlignIcon, { kind: o.v }));
+        })
+      );
+    }
+
     /* 设定里的分区卡片：标题 + 说明 + 内容 */
     function SettingsSection(props) {
       return h('section', { className: 'wb-set-section' },
@@ -1908,7 +2080,7 @@ window.__ModuleLoader__.load({
         className: 'wb-mask',
         onClick: function (ev) { if (ev.target === ev.currentTarget) closeSettings(); }
       },
-        h('div', { className: 'wb-settings', role: 'dialog', 'aria-modal': 'true', 'aria-label': '设定' },
+        h('div', { className: 'wb-settings wb-settings--fixed', role: 'dialog', 'aria-modal': 'true', 'aria-label': '设定' },
           h('div', { className: 'wb-set-head' },
             h('h2', null,
               h('img', {
@@ -1921,6 +2093,8 @@ window.__ModuleLoader__.load({
             ),
             h('button', { type: 'button', className: 'wb-set-close', onClick: closeSettings, 'aria-label': '关闭' }, h(XIcon, { size: 16 }))
           ),
+
+          h('div', { className: 'wb-settings-body' },
 
           /* 头部：圆形 logo + 版本铭牌 */
           h('div', { className: 'wb-settings-hero' },
@@ -1939,23 +2113,69 @@ window.__ModuleLoader__.load({
           h(SettingsSection, { title: '单词本', desc: '首页最上面那行字。想换个名字或换句话，都写在这里。' },
             h('label', { className: 'wb-field' },
               h('span', null, '首页标题'),
-              h('input', {
-                className: 'wb-input',
-                value: s.title,
-                maxLength: 24,
-                placeholder: DEFAULT_SETTINGS.title,
-                onChange: function (ev) { patchSettings({ title: ev.target.value }); }
-              })
+              h('div', { className: 'wb-field-inline' },
+                h('input', {
+                  className: 'wb-input',
+                  value: s.title,
+                  maxLength: 24,
+                  placeholder: DEFAULT_SETTINGS.title,
+                  onChange: function (ev) { patchSettings({ title: ev.target.value }); }
+                }),
+                h(AlignGroup, { field: 'titleAlign', value: s.titleAlign || 'center' }),
+                h('span', { className: 'wb-color' },
+                  h('input', {
+                    type: 'color',
+                    value: s.titleColor,
+                    title: '标题颜色',
+                    'aria-label': '标题颜色',
+                    onChange: function (ev) { patchSettings({ titleColor: ev.target.value }); }
+                  })
+                )
+              )
             ),
             h('label', { className: 'wb-field' },
               h('span', null, '副标题'),
-              h('input', {
-                className: 'wb-input',
-                value: s.subtitle,
-                maxLength: 80,
-                placeholder: DEFAULT_SETTINGS.subtitle,
-                onChange: function (ev) { patchSettings({ subtitle: ev.target.value }); }
-              })
+              h('div', { className: 'wb-field-inline' },
+                h('input', {
+                  className: 'wb-input',
+                  value: s.subtitle,
+                  maxLength: 80,
+                  placeholder: DEFAULT_SETTINGS.subtitle,
+                  onChange: function (ev) { patchSettings({ subtitle: ev.target.value }); }
+                }),
+                h(AlignGroup, { field: 'subtitleAlign', value: s.subtitleAlign || 'center' }),
+                h('span', { className: 'wb-color' },
+                  h('input', {
+                    type: 'color',
+                    value: s.subtitleColor,
+                    title: '副标题颜色',
+                    'aria-label': '副标题颜色',
+                    onChange: function (ev) { patchSettings({ subtitleColor: ev.target.value }); }
+                  })
+                )
+              )
+            ),
+            h('div', { className: 'wb-field' },
+              h('span', null, '背景图'),
+              h('div', { className: 'wb-set-row' },
+                h('button', { type: 'button', className: 'wb-mini', onClick: function () { pickBackground(); } }, '选择图片…'),
+                s.backgroundImage ? h('button', { type: 'button', className: 'wb-mini', onClick: function () { clearBackground(); } }, '恢复默认背景') : null,
+                h('span', { className: 'wb-set-hint' }, s.backgroundImage ? '背景图已启用，可以调透明度' : '默认渐变背景')
+              ),
+              s.backgroundImage ? h('div', { className: 'wb-set-row' },
+                h('span', { className: 'wb-set-hint' }, '透明度'),
+                h('input', {
+                  type: 'range',
+                  min: 0,
+                  max: 100,
+                  step: 1,
+                  className: 'wb-range',
+                  value: String(Math.round((s.backgroundOpacity || 0) * 100)),
+                  'aria-label': '背景图透明度',
+                  onChange: function (ev) { patchSettings({ backgroundOpacity: Number(ev.target.value) / 100 }); }
+                }),
+                h('span', { className: 'wb-set-hint' }, Math.round((s.backgroundOpacity || 0) * 100) + '%')
+              ) : null
             )
           ),
 
@@ -2185,8 +2405,6 @@ window.__ModuleLoader__.load({
             )
           ),
 
-          h('div', { className: 'wb-set-foot' },
-            h('button', { type: 'button', className: 'wb-mini', onClick: resetSettings }, '恢复默认')
           )
         )
       );
@@ -2368,6 +2586,7 @@ window.__ModuleLoader__.load({
             })
           )
         ),
+        h('div', { className: 'wb-learn-scroll' },
         hasPhrases ? h('div', { className: 'wb-section' },
           h('h2', null, '常用词组'),
           h('div', { className: 'wb-phrs' },
@@ -2412,6 +2631,7 @@ window.__ModuleLoader__.load({
             );
           })
         ) : null
+        )
       );
     }
 
@@ -2498,6 +2718,7 @@ window.__ModuleLoader__.load({
         h('div', { className: 'wb-qbar' },
           h('i', { style: { width: (t.done ? 100 : doneCount / total * 100) + '%' } })
         ),
+        h('div', { className: 'wb-test-scroll' },
         artOf(e) ? h('div', { className: 'wb-test-art' },
           h('img', { src: artOf(e), alt: e.artAlt || e.word, draggable: false })
         ) : null,
@@ -2536,6 +2757,7 @@ window.__ModuleLoader__.load({
             )
           )
         ) : null
+        )
       );
     }
 
@@ -2654,6 +2876,7 @@ window.__ModuleLoader__.load({
         h('div', { className: 'wb-qbar' },
           h('i', { style: { width: (doneCount / total * 100) + '%' } })
         ),
+        h('div', { className: 'wb-test-scroll' },
         h('div', { className: 'wb-rec-prompt' }, promptNode()),
         h('div', { className: 'wb-rec-opts' }, q.options.map(optionNode)),
         h('div', {
@@ -2664,6 +2887,7 @@ window.__ModuleLoader__.load({
         h('div', { className: 'wb-testrow' },
           answered ? h('button', { type: 'button', className: 'wb-mini', onClick: nextRecognition }, '下一题') : null,
           h('button', { type: 'button', className: 'wb-mini', onClick: exitRecognition }, '退出辨析')
+        )
         )
       );
     }
@@ -2755,6 +2979,14 @@ window.__ModuleLoader__.load({
             )
           ),
           h('div', { className: 'wb-field' },
+            h('span', null, '主音频'),
+            h('div', { className: 'wb-set-row' },
+              h('button', { type: 'button', className: 'wb-btn wb-btn--sm', onClick: function () { pickWordAudio(w.slug); } }, '替换音频…'),
+              w.customWordAudio ? h('button', { type: 'button', className: 'wb-mini', onClick: function () { clearWordAudio(w.slug); } }, '恢复默认音频') : null,
+              h('span', { className: 'wb-set-hint' }, w.customWordAudio ? '正在用自定义主音频' : '正在用默认主音频')
+            )
+          ),
+          h('div', { className: 'wb-field' },
             h('span', null, '标签'),
             h('div', { className: 'wb-taglist' },
               [BUILTIN_TAG].concat(STORE.tagList).map(function (t) {
@@ -2831,8 +3063,15 @@ window.__ModuleLoader__.load({
         }
       },
         h('style', null, CSS),
+        STORE.settings.backgroundImage ? h('div', {
+          className: 'wb-bg',
+          style: {
+            backgroundImage: 'url("' + assetUrl('bg', STORE.settings.backgroundImage) + '")',
+            opacity: String(clamp01(STORE.settings.backgroundOpacity))
+          }
+        }) : null,
         h('div', {
-          className: 'wb-scroll',
+          className: 'wb-scroll' + (entry ? ' wb-scroll--entry' : ''),
           ref: scroll,
           onScroll: function (ev) {
             const el = ev.currentTarget;
@@ -2841,7 +3080,7 @@ window.__ModuleLoader__.load({
             setShowTop(function (prev) { return prev === show ? prev : show; });
           }
         },
-          h('div', { className: 'wb-wrap' },
+          h('div', { className: 'wb-wrap' + (entry ? ' wb-wrap--entry' : '') },
             h('div', { className: 'wb-topbar' },
               !entry ? h('div', { className: 'wb-brand' },
                 h('img', {

@@ -115,13 +115,14 @@ https://github.com/user-attachments/assets/c1208dbd-7f37-454f-a2a8-3db14179d032
 | 模块 | 说明 |
 |---|---|
 | 首页 | 单词卡网格；按日期 / 首字母 / 字母数量分组，可正序倒序；顶部标签筛选和「已掌握」开关；右下角回到顶部 |
-| 单词卡 | 大插图、手写体词头、音标、英文释义、多个词性横向展示、发音（4 档倍速）、常用词组、每个词性一条例句 |
+| 单词卡 | 大插图、手写体词头、音标、英文释义、多个词性横向展示、发音（4 档倍速，主音频可替换）、常用词组、每个词性一条例句 |
 | 拼写练习 | 挖字母填词，`Tab` 提示、`Esc` 换题、`Enter` 重听/下一题，答完自动进下一题 |
 | 单词辨析 | 12 种题型轮换，帮你记住单词、释义和发音 |
 | 标签 | 设定里配置标签选项，卡片右键多选打标，首页 chip 快速筛选；「已掌握」是固有标签，首页右侧开关控制显隐 |
-| 设定 | 分组卡片：单词本、字体、浏览与排序、标签、目录、技能与权限、支持随记 |
+| 设定 | 分组卡片：单词本（标题/副标题/对齐/背景图与透明度）、字体、浏览与排序、标签、目录、技能与权限、支持随记 |
 | 字体 | 单词字体、词组例句字体各选一款；内置 Patrick Hand、Kalam、Comic Neue、Caveat 四款开源字体 |
 | 自定义插图 | 卡片右键「替换插图…」/「恢复默认插图」；每个单词一个资源目录 |
+| 主音频 | 单词详情设置里「替换音频…」/「恢复默认音频」，和插图一样存在词条目录 |
 | AI 加词 | 装好技能、打开「+单词」，把词表交给 AI：它写词条、画占位图、生成 7 段发音 |
 
 内置字体来自 Google Fonts，按 SIL Open Font License 1.1 分发，许可证文本在 `assets/fonts/`。
@@ -132,13 +133,15 @@ https://github.com/user-attachments/assets/c1208dbd-7f37-454f-a2a8-3db14179d032
 
 ```
 ~/Documents/dsh/suiji-word-book/          ← 单词本根目录，可在设定里改
-  settings.json                           标题/副标题/分组/排序/根目录/工作目录/是否显示 +单词/完全权限开关
+  settings.json                           标题/副标题（各自对齐和颜色）/背景图与透明度/分组/排序/根目录/工作目录/是否显示 +单词/完全权限开关
   meta.json                               tagList 标签选项 + tags 每词标签
   words.json                              词条数组（一个词可以有多个词性，放在 senses 里）
   words/<slug>/                           单个单词的全部资源
     <slug>.svg                            默认插图      → words.json 的 art
     custom-<时间戳>.<ext>                 自定义插图    → words.json 的 customArt
+    custom-audio-<时间戳>.<ext>           自定义主音频  → words.json 的 customWordAudio
     word.wav  p1..p5.wav  sentence.wav    发音
+  background-<时间戳>.<ext>               首页背景图    → settings.json 的 backgroundImage
 ```
 
 Windows 上默认在 `%USERPROFILE%\Documents\dsh\suiji-word-book\`。
