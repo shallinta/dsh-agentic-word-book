@@ -1425,12 +1425,29 @@ window.__ModuleLoader__.load({
       });
     }
 
-    function setWordArt(slug, dataUrl) {
-      hostOp('art', { slug: slug, dataUrl: dataUrl }).then(function (res) {
-        if (res && res.words) applyDiskWords(res.words);
-        applyHostResult(res);
-        emit();
-      });
+    const MAX_ART_BYTES = 25 * 1024 * 1024;
+
+    /* 直接把文件字节 POST 给宿主，不再转成 base64 塞 JSON */
+    function setWordArt(slug, file) {
+      if (!file) return;
+      if (file.size > MAX_ART_BYTES) {
+        showNotice('图片太大了，上限 25 MB');
+        return;
+      }
+      if (typeof fetch !== 'function') return;
+      const qs = '?slug=' + encodeURIComponent(slug) + '&name=' + encodeURIComponent(file.name || '');
+      fetch(HOST_BASE + '/upload' + qs, {
+        method: 'POST',
+        headers: { 'content-type': file.type || 'application/octet-stream' },
+        body: file
+      })
+        .then(function (r) { return r.ok ? r.json() : null; })
+        .then(function (res) {
+          if (res && res.words) applyDiskWords(res.words);
+          applyHostResult(res);
+          emit();
+        })
+        .catch(function () { showNotice('插图没传上去，再试一次'); });
     }
 
     function clearWordArt(slug) {
@@ -1450,9 +1467,7 @@ window.__ModuleLoader__.load({
       input.onchange = function () {
         const file = input.files && input.files[0];
         if (!file) return;
-        const reader = new FileReader();
-        reader.onload = function () { setWordArt(slug, String(reader.result || '')); };
-        reader.readAsDataURL(file);
+        setWordArt(slug, file);
       };
       input.click();
     }

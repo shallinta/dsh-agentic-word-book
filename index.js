@@ -22,6 +22,7 @@ const ASSET_DIR = path.join(PKG_DIR, 'assets')
 const SCRIPTS_DIR = path.join(PKG_DIR, 'scripts')
 
 const BASE = '/suiji-word-book'
+const MAX_UPLOAD = 25 * 1024 * 1024   // 插图上传上限：25 MB
 const IMG_TYPES = {
   '.png': 'image/png',
   '.jpg': 'image/jpeg',
@@ -59,6 +60,25 @@ function readBody(req) {
     const chunks = []
     req.on('data', (c) => chunks.push(c))
     req.on('end', () => resolve(Buffer.concat(chunks).toString('utf8')))
+    req.on('error', reject)
+  })
+}
+
+/* 二进制上传：一次读进内存，超过上限立刻中止 */
+function readRaw(req, limit) {
+  return new Promise((resolve, reject) => {
+    const chunks = []
+    let total = 0
+    req.on('data', (chunk) => {
+      total += chunk.length
+      if (total > limit) {
+        reject(new Error('upload too large'))
+        try { req.destroy() } catch {}
+        return
+      }
+      chunks.push(chunk)
+    })
+    req.on('end', () => resolve(Buffer.concat(chunks)))
     req.on('error', reject)
   })
 }
@@ -254,6 +274,33 @@ function extOf(mime) {
   return '.png'
 }
 
+const CUSTOM_ART_EXTS = ['.png', '.jpg', '.jpeg', '.webp', '.gif', '.svg']
+
+/* 把自定义插图的字节落进 words/<slug>/，返回新的 customArt 路径 */
+function saveCustomArt(rootDir, slug, buffer, mime, name) {
+  const wordsFile = paths(rootDir).words
+  const list = readJson(wordsFile, [])
+  const target = list.find(function (w) { return w.slug === slug })
+  if (!target) return { ok: false, error: 'unknown word' }
+  const dir = path.join(rootDir, 'words', slug)
+  mkdirSync(dir, { recursive: true })
+  for (const old of readdirSync(dir)) {
+    if (old.indexOf('custom-') === 0) {
+      try { rmSync(path.join(dir, old), { force: true }) } catch {}
+    }
+  }
+  let ext = extOf(String(mime || ''))
+  if (!mime || mime === 'application/octet-stream') {
+    const byName = path.extname(String(name || '')).toLowerCase()
+    if (CUSTOM_ART_EXTS.indexOf(byName) >= 0) ext = byName
+  }
+  const file = 'custom-' + Date.now().toString(36) + ext
+  writeFileSync(path.join(dir, file), buffer)
+  target.customArt = 'words/' + slug + '/' + file
+  writeJson(wordsFile, list)
+  return { ok: true, file: target.customArt, words: list }
+}
+
 /* ---------------- 技能安装 ---------------- */
 
 const SKILL_NAME = 'suiji-word-book'
@@ -385,23 +432,7 @@ export function apply(rootCtx) {
           const slug = String(args.slug || '').trim().toLowerCase()
           const m = /^data:([^;,]+);base64,(.+)$/.exec(String(args.dataUrl || ''))
           if (!slug || !m) return sendJson(res, 200, { ok: false, error: 'bad request' })
-          const wordsFile = paths(state.rootDir).words
-          const list = readJson(wordsFile, [])
-          const target = list.find(function (w) { return w.slug === slug })
-          if (!target) return sendJson(res, 200, { ok: false, error: 'unknown word' })
-          const dir = path.join(state.rootDir, 'words', slug)
-          mkdirSync(dir, { recursive: true })
-          for (const old of readdirSync(dir)) {
-            if (old.indexOf('custom-') === 0) {
-              try { rmSync(path.join(dir, old), { force: true }) } catch {}
-            }
-          }
-          const ext = extOf(m[1]).slice(1)
-          const file = 'custom-' + Date.now().toString(36) + '.' + ext
-          writeFileSync(path.join(dir, file), Buffer.from(m[2], 'base64'))
-          target.customArt = 'words/' + slug + '/' + file
-          writeJson(wordsFile, list)
-          return sendJson(res, 200, { ok: true, file: target.customArt, words: list })
+          return sendJson(res, 200, saveCustomArt(state.rootDir, slug, Buffer.from(m[2], 'base64'), m[1].toLowerCase(), ''))
         }
 
         if (op === 'art-clear') {
@@ -573,6 +604,29 @@ export function apply(rootCtx) {
       } catch {
         res.statusCode = 404
         res.end()
+      }
+    },
+  }))
+
+  /* 自定义插图上传：原始字节 + 查询参数，代替 data URL */
+  disposers.push(webServer.register({
+    kind: 'exact',
+    path: BASE + '/upload',
+    handler: async (req, res) => {
+      if (!trusted(req, res)) return
+      try {
+        if (req.method !== 'POST') return sendJson(res, 405, { ok: false, error: 'POST only' })
+        const url = new URL(req.url, 'http://localhost')
+        const slug = String(url.searchParams.get('slug') || '').trim().toLowerCase()
+        if (!/^[a-z][a-z'-]*$/.test(slug)) return sendJson(res, 400, { ok: false, error: 'bad slug' })
+        const name = String(url.searchParams.get('name') || '')
+        const mime = String(req.headers['content-type'] || '').split(';')[0].trim().toLowerCase()
+        const buffer = await readRaw(req, MAX_UPLOAD)
+        if (!buffer.length) return sendJson(res, 400, { ok: false, error: 'empty body' })
+        return sendJson(res, 200, saveCustomArt(stateOf().rootDir, slug, buffer, mime, name))
+      } catch (err) {
+        const message = String((err && err.message) || err)
+        return sendJson(res, /too large/.test(message) ? 413 : 400, { ok: false, error: message })
       }
     },
   }))
