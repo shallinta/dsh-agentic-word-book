@@ -20,6 +20,13 @@ window.__ModuleLoader__.load({
        mono 大字、珊瑚渐变 pill 按钮、青色喇叭、琥珀色例句框。
        只是把 :root 变量收进 .wb-root，类名统一加 wb- 前缀避免和宿主冲突。 */
     const CSS = `
+@font-face{font-family:'WB Patrick Hand';src:url('/suiji-word-book/asset?name=fonts/patrick-hand-400.woff2') format('woff2');font-weight:400;font-style:normal;font-display:swap}
+@font-face{font-family:'WB Kalam';src:url('/suiji-word-book/asset?name=fonts/kalam-400.woff2') format('woff2');font-weight:400;font-style:normal;font-display:swap}
+@font-face{font-family:'WB Kalam';src:url('/suiji-word-book/asset?name=fonts/kalam-700.woff2') format('woff2');font-weight:700;font-style:normal;font-display:swap}
+@font-face{font-family:'WB Comic Neue';src:url('/suiji-word-book/asset?name=fonts/comic-neue-400.woff2') format('woff2');font-weight:400;font-style:normal;font-display:swap}
+@font-face{font-family:'WB Comic Neue';src:url('/suiji-word-book/asset?name=fonts/comic-neue-700.woff2') format('woff2');font-weight:700;font-style:normal;font-display:swap}
+@font-face{font-family:'WB Caveat';src:url('/suiji-word-book/asset?name=fonts/caveat-var.woff2') format('woff2');font-weight:400 700;font-style:normal;font-display:swap}
+
 .wb-root{
   --wb-ink:#3A3550;--wb-ink-soft:#615C7A;--wb-muted:#948FAC;
   --wb-line:#F0EAF7;--wb-line-strong:#E2DAEE;--wb-card:#fff;--wb-bg:#FFF9F0;
@@ -44,6 +51,7 @@ window.__ModuleLoader__.load({
 /* 用 :where() 把权重压到 0 —— 否则 .wb-root button 会盖掉 .wb-btn/.wb-card 的底色和边框 */
 :where(.wb-root) button{font:inherit;color:inherit;border:0;background:none;padding:0;cursor:pointer}
 .wb-root :focus-visible{outline:3px solid var(--wb-sky);outline-offset:3px;border-radius:10px}
+.wb-root input:focus-visible,.wb-root select:focus-visible,.wb-root textarea:focus-visible{outline:none}
 
 .wb-scroll{flex:1 1 auto;min-height:0;overflow-y:auto;overflow-x:hidden;overscroll-behavior:contain}
 .wb-wrap{width:100%;max-width:1200px;margin:0 auto;padding:10px 12px 40px}
@@ -53,7 +61,7 @@ window.__ModuleLoader__.load({
 .wb-topbar-side{display:flex;align-items:center;gap:10px;margin-left:auto}
 .wb-back{display:inline-flex;align-items:center;gap:7px;font-size:calc(14px * var(--wb-scale));color:var(--wb-ink-soft);background:rgba(255,255,255,.75);border:1px solid var(--wb-line-strong);padding:8px 15px;border-radius:999px;box-shadow:var(--wb-shadow-sm);transition:transform .16s,background .16s}
 .wb-back:hover{transform:translateX(-2px);background:#fff}
-.wb-back b{font-size:calc(15px * var(--wb-scale));line-height:1}
+.wb-back svg{display:block;flex:none}
 
 /* ---------- 按钮 ---------- */
 .wb-btn{display:inline-flex;align-items:center;justify-content:center;gap:9px;background:linear-gradient(180deg,#FFA177,var(--wb-coral));color:#fff;font-size:calc(17px * var(--wb-scale));font-weight:700;padding:13px 30px;border-radius:999px;box-shadow:0 14px 26px -12px rgba(242,112,63,.85);transition:transform .16s,box-shadow .16s,filter .16s}
@@ -253,33 +261,93 @@ window.__ModuleLoader__.load({
 .wb-taglist{display:flex;flex-wrap:wrap;gap:8px;margin-bottom:10px;min-height:28px}
 .wb-tagitem{display:inline-flex;align-items:center;gap:6px;background:#F5F0FF;border:1px solid #E4DBFA;border-radius:999px;padding:4px 5px 4px 12px;font-size:calc(13px * var(--wb-scale));color:#6B5B94}
 .wb-tagitem em{font-style:normal;font-family:var(--wb-mono);font-size:.8em;color:#9C8EC0;background:#EFE7FF;border-radius:999px;padding:1px 6px}
-.wb-tagx{width:18px;height:18px;border-radius:50%;display:grid;place-items:center;background:#E8DFFB;color:#6B5B94;font-size:12px;line-height:1;border:0;cursor:pointer}
+.wb-tagx{width:18px;height:18px;border-radius:50%;display:grid;place-items:center;background:#E8DFFB;color:#6B5B94;border:0;cursor:pointer}
+.wb-tagx svg{display:block}
 .wb-tagx:hover{background:var(--wb-red);color:#fff}
 .wb-tagnone{color:var(--wb-muted);font-size:calc(12.5px * var(--wb-scale));line-height:1.8}
 .wb-tagadd{display:flex;gap:8px;align-items:center}
-.wb-tagadd .wb-input{flex:1}
+.wb-tagadd .wb-input{flex:1;min-width:0}
 
 /* ---------- 设定面板 ---------- */
-.wb-set-btn{display:inline-flex;align-items:center;gap:6px}
+/* 顶栏的圆形齿轮按钮 */
+.wb-set-ico{flex:none;display:inline-grid;place-items:center;width:34px;height:34px;border-radius:50%;color:var(--wb-ink-soft);background:#FAF7FF;border:1px solid var(--wb-line-strong);transition:background .16s,color .16s,border-color .16s}
+.wb-set-ico:hover{background:#F3EDFF;color:var(--wb-ink)}
+.wb-set-ico:active{transform:scale(.96)}
+.wb-set-ico svg{display:block}
+
+/* 「+单词」：平时是跟设定一样大的圆，hover / 键盘聚焦时拉长成「+ 单词」 */
+.wb-add-ico{flex:none;display:inline-flex;align-items:center;justify-content:center;width:34px;height:34px;padding:0;border-radius:999px;overflow:hidden;color:var(--wb-ink-soft);background:#FAF7FF;border:1px solid var(--wb-line-strong);transition:width .2s ease,background .16s,color .16s,border-color .16s}
+.wb-add-ico:hover,.wb-add-ico:focus-visible{width:82px;background:#F3EDFF;color:var(--wb-ink)}
+.wb-add-ico:active{transform:scale(.97)}
+.wb-add-ico .plus{flex:none;width:17px;height:17px;display:inline-flex;align-items:center;justify-content:center}
+.wb-add-ico .plus svg{display:block}
+.wb-add-ico .lbl{flex:none;max-width:0;opacity:0;overflow:hidden;white-space:nowrap;font-size:calc(13px * var(--wb-scale));line-height:1;transition:max-width .2s ease,opacity .15s ease,margin-left .2s ease}
+.wb-add-ico:hover .lbl,.wb-add-ico:focus-visible .lbl{max-width:72px;opacity:1;margin-left:7px}
 .wb-mask{position:absolute;inset:0;z-index:20;background:rgba(58,53,80,.32);backdrop-filter:blur(3px);display:grid;place-items:center;padding:24px;animation:wb-fade .18s ease-out}
-.wb-settings{width:min(560px,100%);max-height:100%;overflow:auto;background:var(--wb-card);border-radius:22px;box-shadow:0 30px 60px -30px rgba(80,60,120,.6);padding:20px 24px 22px}
+.wb-settings{width:min(600px,100%);max-height:100%;overflow-y:auto;overflow-x:hidden;overscroll-behavior:contain;background:var(--wb-card);border-radius:22px;box-shadow:0 30px 60px -30px rgba(80,60,120,.6);padding:20px 24px 22px}
 .wb-set-head{display:flex;align-items:center;justify-content:space-between;margin-bottom:16px}
-.wb-set-head h2{margin:0;font-size:calc(18px * var(--wb-scale));font-weight:700}
-.wb-set-close{width:32px;height:32px;border-radius:50%;font-size:20px;line-height:1;color:var(--wb-ink-soft);background:#FAF7FF;border:1px solid var(--wb-line-strong);display:grid;place-items:center}
+.wb-set-head h2{margin:0;display:flex;align-items:center;gap:9px;font-size:calc(15.5px * var(--wb-scale));font-weight:600}
+.wb-set-mark{width:22px;height:22px;display:block;flex:none;filter:brightness(0)}
+
+/* 首页左上角的小图标 */
+.wb-brand{display:inline-flex;align-items:center;flex:none}
+.wb-brand img{width:30px;height:30px;display:block;filter:brightness(0)}
+.wb-set-close{width:32px;height:32px;border-radius:50%;color:var(--wb-ink-soft);background:#FAF7FF;border:1px solid var(--wb-line-strong);display:grid;place-items:center}
 .wb-set-close:hover{background:#F3EDFF;color:var(--wb-ink)}
+.wb-set-close svg{display:block}
+
+/* 设定头部：圆形 logo + 版本铭牌 */
+.wb-settings-hero{display:flex;justify-content:center;padding:4px 0 20px;margin-bottom:16px;border-bottom:1px solid var(--wb-line)}
+.wb-settings-avatar-shell{position:relative;width:152px;height:152px;background:transparent}
+.wb-settings-avatar-wrap{position:relative;width:152px;height:152px;border-radius:50%;overflow:hidden;background:#fff;border:1px solid var(--wb-line-strong);box-shadow:0 0 0 4px #fff,0 0 0 5px var(--wb-line-strong)}
+.wb-settings-avatar{width:100%;height:100%;aspect-ratio:1;border-radius:50%;object-fit:cover;display:block;background:#fff}
+.wb-settings-ver{position:absolute;left:calc(100% + 12px);bottom:8px;font-size:calc(12px * var(--wb-scale));line-height:1.35;font-weight:600;color:var(--wb-ink);white-space:nowrap}
+
+/* 分区卡片 */
+.wb-set-section{margin-bottom:16px;padding:16px 14px;border:1px solid var(--wb-line);border-radius:18px;background:#FFFDFA}
+.wb-set-section-head{display:flex;align-items:center;gap:8px}
+.wb-set-title{flex:1;min-width:0;font-size:calc(14.5px * var(--wb-scale));font-weight:700;line-height:1.5;color:var(--wb-ink)}
+.wb-set-desc{margin:4px 0 12px;font-size:calc(12px * var(--wb-scale));line-height:1.65;color:var(--wb-muted);text-wrap:pretty}
+.wb-set-section .wb-field{margin-bottom:14px}
+.wb-set-section .wb-field:last-child{margin-bottom:0}
+.wb-set-section .wb-set-note{margin:8px 0 0}
+.wb-set-section .wb-set-row{margin-top:8px}
+
 .wb-field{display:block;margin-bottom:16px}
 .wb-field > span{display:block;font-size:calc(12.5px * var(--wb-scale));color:var(--wb-muted);letter-spacing:.1em;margin-bottom:7px;font-weight:600}
 .wb-path{display:block;padding:9px 12px;border-radius:10px;background:#FAF7FF;border:1px solid var(--wb-line-strong);font-family:ui-monospace,Menlo,Consolas,monospace;font-size:calc(12.5px * var(--wb-scale));color:var(--wb-ink);line-height:1.55;word-break:break-all;user-select:all}
 .wb-input{width:100%;font:inherit;font-size:calc(15px * var(--wb-scale));color:var(--wb-ink);background:#FCFAFE;border:1px solid var(--wb-line-strong);border-radius:10px;padding:9px 12px}
+.wb-select{cursor:pointer;appearance:none;-webkit-appearance:none;padding-right:34px;background-image:linear-gradient(45deg,transparent 50%,var(--wb-muted) 50%),linear-gradient(135deg,var(--wb-muted) 50%,transparent 50%);background-position:calc(100% - 17px) calc(50% - 1px),calc(100% - 12px) calc(50% - 1px);background-size:5px 5px,5px 5px;background-repeat:no-repeat}
 .wb-input::placeholder{color:#B9B2CC}
-.wb-input:focus{outline:2px solid var(--wb-sky);outline-offset:1px;border-color:var(--wb-sky)}
+.wb-input:focus{outline:none;border-color:var(--wb-sky)}
 .wb-seg{display:flex;gap:8px;flex-wrap:wrap}
 .wb-seg button{font-size:calc(13px * var(--wb-scale));color:var(--wb-ink-soft);background:#FAF7FF;border:1px solid var(--wb-line-strong);border-radius:999px;padding:8px 16px;transition:background .16s,border-color .16s,color .16s}
 .wb-seg button:hover{background:#F3EDFF}
 .wb-seg button[aria-pressed="true"]{background:linear-gradient(180deg,#FFA177,var(--wb-coral));border-color:var(--wb-coral);color:#fff;font-weight:600}
 .wb-set-note{margin:2px 0 18px;font-size:calc(12px * var(--wb-scale));line-height:1.7;color:var(--wb-muted)}
-.wb-set-foot{display:flex;align-items:center;justify-content:space-between;gap:10px}
-.wb-set-hint{color:var(--wb-muted);font-size:calc(11.5px * var(--wb-scale))}
+.wb-set-row{display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin-top:8px}
+.wb-set-row:first-child{margin-top:0}
+.wb-set-hint{color:var(--wb-muted);font-size:calc(11.5px * var(--wb-scale));line-height:1.6}
+.wb-set-warn{margin:8px 0 10px;padding:10px 12px;border-radius:12px;background:#FFF1EC;border:1px solid #FFD8CC;color:var(--wb-ink-soft);font-size:calc(12.5px * var(--wb-scale));line-height:1.65}
+.wb-set-warn b{display:block;margin-bottom:2px;color:var(--wb-coral-2);font-size:calc(13px * var(--wb-scale))}
+.wb-set-warn p{margin:0}
+.wb-set-foot{display:flex;align-items:center;justify-content:space-between;gap:10px;margin-top:4px;padding-top:14px;border-top:1px solid var(--wb-line)}
+
+/* 打赏：两张收款码并排，窄了自动换行 */
+.wb-donate{display:flex;flex-wrap:wrap;align-items:flex-start;gap:18px;padding:2px 0 4px}
+.wb-donate-item{display:flex;flex-direction:column;align-items:center;gap:8px;min-width:0}
+.wb-donate-img{display:block;width:170px;max-width:100%;height:auto;aspect-ratio:1/1;object-fit:contain;background:#fff;border:1px solid var(--wb-line);border-radius:8px}
+.wb-donate-cap{font-size:calc(12px * var(--wb-scale));line-height:1.5;color:var(--wb-muted)}
+
+/* 打赏下面的随记推荐 */
+.wb-cross{margin-top:16px}
+.wb-cross-desc{margin:0 0 10px;font-size:calc(12.5px * var(--wb-scale));line-height:1.7;color:var(--wb-muted)}
+.wb-cross-desc b{color:var(--wb-ink)}
+.wb-cross-acts{display:flex;align-items:center;gap:10px;flex-wrap:wrap}
+
+
+/* ---------- 轻提示 ---------- */
+.wb-toast{position:absolute;left:50%;bottom:28px;transform:translateX(-50%);z-index:40;background:#3A3550;color:#fff;font-size:calc(13px * var(--wb-scale));line-height:1.5;padding:10px 20px;border-radius:999px;box-shadow:0 16px 34px -16px rgba(58,53,80,.9);max-width:min(560px,calc(100% - 40px));text-align:center;pointer-events:none;animation:wb-fade .18s ease-out}
 
 /* ---------- 空态 ---------- */
 .wb-empty{margin:24px auto 0;max-width:980px;background:#fff;border:1px solid var(--wb-line);border-radius:var(--wb-r);padding:40px 24px;text-align:center;box-shadow:var(--wb-shadow);color:var(--wb-ink-soft);font-size:calc(14px * var(--wb-scale))}
@@ -313,6 +381,15 @@ window.__ModuleLoader__.load({
 @media (max-width:460px){
   .wb-grid--2,.wb-grid--3,.wb-grid--4{grid-template-columns:1fr}
 }
+/* 窄面板里的设定弹窗：收窄留白，logo 改成上下排，避免版本铭牌顶出横向滚动 */
+@media (max-width:520px){
+  .wb-mask{padding:12px}
+  .wb-settings{padding:16px 14px 18px;border-radius:18px}
+  .wb-settings-hero{flex-direction:column;align-items:center;gap:12px;padding:2px 0 16px}
+  .wb-settings-ver{position:static;left:auto;bottom:auto;white-space:normal;text-align:center}
+  .wb-set-section{padding:14px 12px;border-radius:16px}
+  .wb-donate{justify-content:center}
+}
 `;
 
     /* ============================== 持久状态 ==============================
@@ -322,6 +399,34 @@ window.__ModuleLoader__.load({
        数据落在「单词本根目录」（宿主半边写盘），localStorage 只作为首屏缓存与迁移来源。 */
     const SETTINGS_KEY = 'wb.settings.v1';
     const HOST_BASE = '/suiji-word-book';
+
+    /* 包内静态资源（图标、logo、收款码）：宿主在 /asset 路由里按文件名从 assets/ 取 */
+    function pluginAsset(name) {
+      return HOST_BASE + '/asset?name=' + encodeURIComponent(name);
+    }
+    /* ---------- 字体 ----------
+       四款开源字体随插件分发（assets/fonts，OFL），其余用系统自带。
+       Segoe Print 只有 Windows 有，mac 上不进候选。 */
+    const IS_WIN = /windows/i.test((typeof navigator !== 'undefined' && navigator.userAgent) || '');
+    const FONT_CHOICES = IS_WIN
+      ? ['Segoe Print', 'Patrick Hand', 'Kalam', 'Comic Neue', 'Comic Sans MS', 'Caveat']
+      : ['Patrick Hand', 'Kalam', 'Comic Neue', 'Comic Sans MS', 'Caveat'];
+    const DEFAULT_WORD_FONT = IS_WIN ? 'Segoe Print' : 'Kalam';
+    const DEFAULT_PHRASE_FONT = 'Comic Sans MS';
+    const FONT_STACKS = {
+      'Segoe Print': `"Segoe Print", "WB Patrick Hand", cursive`,
+      'Patrick Hand': `"WB Patrick Hand", "Patrick Hand", cursive`,
+      'Kalam': `"WB Kalam", "Kalam", cursive`,
+      'Comic Neue': `"WB Comic Neue", "Comic Neue", "Comic Sans MS", cursive`,
+      'Comic Sans MS': `"Comic Sans MS", "WB Comic Neue", cursive`,
+      'Caveat': `"WB Caveat", "Caveat", cursive`
+    };
+    function pickFont(value, fallback) {
+      return FONT_CHOICES.indexOf(value) >= 0 ? value : fallback;
+    }
+
+    const NOTES_URL = 'https://github.com/shallinta/dsh-agentic-notes';
+
     const DEFAULT_ROOT_LABEL = '~/Documents/dsh/suiji-word-book/';
     const DEFAULT_WORKDIR_LABEL = '~/Documents/deepseek-harness/suiji-word-book/';
     const DEFAULT_SETTINGS = {
@@ -332,7 +437,9 @@ window.__ModuleLoader__.load({
       rootDir: '',
       showAddWord: false,
       skillInstalled: false,
-      newSessionFullAccess: true
+      newSessionFullAccess: true,
+      fontWord: DEFAULT_WORD_FONT,
+      fontPhrase: DEFAULT_PHRASE_FONT
     };
 
     function loadSettings() {
@@ -344,6 +451,8 @@ window.__ModuleLoader__.load({
           if (typeof raw.subtitle === 'string') out.subtitle = raw.subtitle;
           if (raw.groupBy === 'date' || raw.groupBy === 'letter' || raw.groupBy === 'length') out.groupBy = raw.groupBy;
           if (raw.order === 'asc' || raw.order === 'desc') out.order = raw.order;
+          out.fontWord = pickFont(raw.fontWord, DEFAULT_WORD_FONT);
+          out.fontPhrase = pickFont(raw.fontPhrase, DEFAULT_PHRASE_FONT);
         }
       } catch (e) {}
       return out;
@@ -416,6 +525,8 @@ window.__ModuleLoader__.load({
       if (Array.isArray(state.tagList)) STORE.tagList = state.tagList.slice();
       if (state.tags && typeof state.tags === 'object') STORE.tags = Object.assign(Object.create(null), state.tags);
       if (typeof state.rootDir === 'string' && state.rootDir) STORE.settings.rootDir = state.rootDir;
+      STORE.settings.fontWord = pickFont(STORE.settings.fontWord, DEFAULT_WORD_FONT);
+      STORE.settings.fontPhrase = pickFont(STORE.settings.fontPhrase, DEFAULT_PHRASE_FONT);
     }
 
     let saveTimer = null;
@@ -547,10 +658,13 @@ window.__ModuleLoader__.load({
       hostLoaded: false,        // 是否已从根目录读到状态
       filters: [],             // 首页正在筛选的标签
       menu: null,              // 右键菜单 { slug, x, y }
+      notice: '',              // 面板底部的一句轻提示
+      notesState: '',          // 「一键安装随记」的提示
       lastView: '',
       listeners: new Set()
     };
     let pending = null;   // 自动翻题的延时句柄
+    let noticeTimer = null;  // 轻提示自动消失的句柄
     let badTimer = null;  // 答错闪红的复位句柄
     let lastAutoKey = null;  // 上一道自动发音过的题（slug#idx），避免同一题重复响
     let lastRecKey = null;   // 单词辨认里上一道自动播放的题号
@@ -563,6 +677,18 @@ window.__ModuleLoader__.load({
     function emit() {
       STORE.listeners.forEach(function (fn) { try { fn(); } catch (e) {} });
     }
+    /* 面板底部的一句提示，3 秒后自己消失 */
+    function showNotice(text) {
+      STORE.notice = String(text || '');
+      if (noticeTimer) clearTimeout(noticeTimer);
+      noticeTimer = setTimeout(function () {
+        noticeTimer = null;
+        STORE.notice = '';
+        emit();
+      }, 3200);
+      emit();
+    }
+
     function clearPending() {
       if (pending) { clearTimeout(pending); pending = null; }
     }
@@ -622,6 +748,55 @@ window.__ModuleLoader__.load({
       },
         h('path', { d: 'M12 6.5C10.4 5.2 8.4 4.6 6.3 4.6H4.7v13.2h1.6c2.1 0 4.1.6 5.7 1.7 1.6-1.1 3.6-1.7 5.7-1.7h1.6V4.6h-1.6c-2.1 0-4.1.6-5.7 1.9z', fill: 'currentColor', fillOpacity: .14 }),
         h('path', { d: 'M12 6.7v12.7' })
+      );
+    }
+
+    /* 加号图标：+单词按钮用，线宽和齿轮一致 */
+    function PlusIcon(props) {
+      const size = (props && typeof props.size === 'number') ? props.size : 16;
+      return h('svg', {
+        width: size, height: size, viewBox: '0 0 24 24', fill: 'none',
+        stroke: 'currentColor', strokeWidth: 1.8, strokeLinecap: 'round',
+        'aria-hidden': true
+      },
+        h('path', { d: 'M12 5v14M5 12h14' })
+      );
+    }
+
+    /* 返回箭头 / 关闭叉：和齿轮、加号同一套线条参数 */
+    function ArrowLeftIcon(props) {
+      const size = (props && typeof props.size === 'number') ? props.size : 16;
+      return h('svg', {
+        width: size, height: size, viewBox: '0 0 24 24', fill: 'none',
+        stroke: 'currentColor', strokeWidth: 1.8, strokeLinecap: 'round', strokeLinejoin: 'round',
+        'aria-hidden': true
+      },
+        h('path', { d: 'M19 12H5' }),
+        h('path', { d: 'M11 6l-6 6 6 6' })
+      );
+    }
+
+    function XIcon(props) {
+      const size = (props && typeof props.size === 'number') ? props.size : 16;
+      return h('svg', {
+        width: size, height: size, viewBox: '0 0 24 24', fill: 'none',
+        stroke: 'currentColor', strokeWidth: 1.8, strokeLinecap: 'round',
+        'aria-hidden': true
+      },
+        h('path', { d: 'M6 6l12 12M18 6L6 18' })
+      );
+    }
+
+    /* 齿轮图标：设定按钮用，currentColor 跟随按钮文字色 */
+    function GearIcon(props) {
+      const size = (props && typeof props.size === 'number') ? props.size : 16;
+      return h('svg', {
+        width: size, height: size, viewBox: '0 0 24 24', fill: 'none',
+        stroke: 'currentColor', strokeWidth: 1.8, strokeLinecap: 'round', strokeLinejoin: 'round',
+        'aria-hidden': true
+      },
+        h('circle', { cx: 12, cy: 12, r: 3.1 }),
+        h('path', { d: 'M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 1 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 1 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 1 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 1 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z' })
       );
     }
 
@@ -1020,8 +1195,11 @@ window.__ModuleLoader__.load({
         const near = shuffle(ZH_NEAR[word.slug] || []).filter(function (s) {
           return s !== word.zh;
         })[0];
-        opts.push(near ? { value: near, correct: false, near: true }
-                       : { value: others[2].zh, correct: false });
+        if (near) opts.push({ value: near, correct: false, near: true });
+        else {
+          const alt = others.filter(function (w) { return w.zh && w.zh !== word.zh; })[0];
+          if (alt) opts.push({ value: alt.zh, correct: false });
+        }
       } else {
         /* 选单词：三个干扰项都是**真实存在的英语单词**（词库内或词库外都行），只是长得像 */
         opts.push({ value: word.word, correct: true });
@@ -1066,6 +1244,11 @@ window.__ModuleLoader__.load({
     }
 
     function startRecognition() {
+      /* 四选一需要另外三个词提供干扰项，词库不够就别开一局做不成的题 */
+      if (WORDS.length < 4) {
+        showNotice('单词辨析至少需要 4 个单词，先加几个词再来。');
+        return;
+      }
       const anchor = (STORE.recognition && STORE.recognition.anchor) || STORE.slug || (WORDS[0] && WORDS[0].slug);
       clearPending();
       lastRecKey = null;
@@ -1349,6 +1532,28 @@ window.__ModuleLoader__.load({
       });
     }
 
+    /* ---------- 随记推荐 ---------- */
+    function openNotesGithub(ev) {
+      if (ev && ev.preventDefault) ev.preventDefault();
+      hostOp('open-url', { url: NOTES_URL }).then(function (res) {
+        if (res && res.ok) return;
+        try { window.open(NOTES_URL, '_blank', 'noopener'); } catch (e) {}
+      });
+    }
+    function installNotes() {
+      STORE.notesState = '正在新建会话…';
+      emit();
+      hostOp('install-notes', {}).then(function (res) {
+        if (res && res.ok) {
+          STORE.notesState = '会话已创建，正在打开…';
+          openCreatedSession(res);
+        } else {
+          STORE.notesState = (res && res.error) || '没能新建会话';
+        }
+        emit();
+      });
+    }
+
     let ctxRef = null;
 
     /* ---------- 单词详情设置弹窗 ---------- */
@@ -1459,15 +1664,20 @@ window.__ModuleLoader__.load({
       );
     }
 
-    function Home() {
+    /* 首页大标题：词库空着的时候也要在，不然第一次打开只剩一句提示 */
+    function Hero() {
       const s = STORE.settings;
+      return h('div', { className: 'wb-hero' },
+        h('h1', null, s.title || DEFAULT_SETTINGS.title),
+        s.subtitle ? h('p', null, s.subtitle) : null
+      );
+    }
+
+    function Home() {
       const groups = groupedWords();
       const total = visibleWords().length;
       return h('div', null,
-        h('div', { className: 'wb-hero' },
-          h('h1', null, s.title || DEFAULT_SETTINGS.title),
-          s.subtitle ? h('p', null, s.subtitle) : null
-        ),
+        h(Hero),
         h(TagFilters),
         groups.map(function (g) {
           const cols = g.words.length <= 2 ? 2 : (g.words.length === 3 ? 3 : 4);
@@ -1506,6 +1716,18 @@ window.__ModuleLoader__.load({
       );
     }
 
+    /* 设定里的分区卡片：标题 + 说明 + 内容 */
+    function SettingsSection(props) {
+      return h('section', { className: 'wb-set-section' },
+        h('div', { className: 'wb-set-section-head' },
+          h('div', { className: 'wb-set-title' }, props.title),
+          props.action || null
+        ),
+        props.desc ? h('div', { className: 'wb-set-desc' }, props.desc) : null,
+        React.Children.toArray(props.children)
+      );
+    }
+
     function SettingsPanel() {
       const s = STORE.settings;
       return h('div', {
@@ -1514,171 +1736,279 @@ window.__ModuleLoader__.load({
       },
         h('div', { className: 'wb-settings', role: 'dialog', 'aria-modal': 'true', 'aria-label': '设定' },
           h('div', { className: 'wb-set-head' },
-            h('h2', null, '设定'),
-            h('button', { type: 'button', className: 'wb-set-close', onClick: closeSettings, 'aria-label': '关闭' }, '×')
-          ),
-          h('label', { className: 'wb-field' },
-            h('span', null, '首页标题'),
-            h('input', {
-              className: 'wb-input',
-              value: s.title,
-              maxLength: 24,
-              placeholder: DEFAULT_SETTINGS.title,
-              onChange: function (ev) { patchSettings({ title: ev.target.value }); }
-            })
-          ),
-          h('label', { className: 'wb-field' },
-            h('span', null, '副标题'),
-            h('input', {
-              className: 'wb-input',
-              value: s.subtitle,
-              maxLength: 80,
-              placeholder: DEFAULT_SETTINGS.subtitle,
-              onChange: function (ev) { patchSettings({ subtitle: ev.target.value }); }
-            })
-          ),
-          h('div', { className: 'wb-field' },
-            h('span', null, '分组方式'),
-            h(Seg, {
-              field: 'groupBy',
-              value: s.groupBy,
-              options: [
-                { v: 'date', label: '按日期' },
-                { v: 'letter', label: '按首字母' },
-                { v: 'length', label: '按字母数量' }
-              ]
-            })
-          ),
-          h('div', { className: 'wb-field' },
-            h('span', null, '排序方向'),
-            h(Seg, {
-              field: 'order',
-              value: s.order,
-              options: [
-                { v: 'desc', label: '倒序' },
-                { v: 'asc', label: '顺序' }
-              ]
-            })
-          ),
-          h('p', { className: 'wb-set-note' }, '排序方向决定组与组之间的先后；每组内部始终按加入时间从早到晚。'),
-          h('div', { className: 'wb-field' },
-            h('span', null, '标签'),
-            h('div', { className: 'wb-taglist' },
-              STORE.tagList.length
-                ? STORE.tagList.map(function (t) {
-                  const used = Object.keys(STORE.tags).filter(function (k) {
-                    return STORE.tags[k].indexOf(t) >= 0;
-                  }).length;
-                  return h('span', { className: 'wb-tagitem', key: t },
-                    t,
-                    h('em', null, String(used)),
-                    h('button', {
-                      type: 'button',
-                      className: 'wb-tagx',
-                      title: '删除标签 ' + t,
-                      'aria-label': '删除标签 ' + t,
-                      onClick: function () { removeTagOption(t); }
-                    }, '×')
-                  );
-                })
-                : h('span', { className: 'wb-tagnone' }, '还没有标签，在下面加一个')
+            h('h2', null,
+              h('img', {
+                className: 'wb-set-mark',
+                src: pluginAsset('suiji-wordbook-icon.svg'),
+                alt: '',
+                'aria-hidden': true
+              }),
+              '随记单词本设置'
             ),
-            h('div', { className: 'wb-tagadd' },
+            h('button', { type: 'button', className: 'wb-set-close', onClick: closeSettings, 'aria-label': '关闭' }, h(XIcon, { size: 16 }))
+          ),
+
+          /* 头部：圆形 logo + 版本铭牌 */
+          h('div', { className: 'wb-settings-hero' },
+            h('div', { className: 'wb-settings-avatar-shell' },
+              h('div', { className: 'wb-settings-avatar-wrap' },
+                h('img', {
+                  className: 'wb-settings-avatar',
+                  src: pluginAsset('suiji-wordbook-logo.webp'),
+                  alt: '随记单词本 logo'
+                })
+              ),
+              h('span', { className: 'wb-settings-ver' }, '随记单词本 · v1.0.0')
+            )
+          ),
+
+          h(SettingsSection, { title: '单词本', desc: '首页最上面那行字。想换个名字或换句话，都写在这里。' },
+            h('label', { className: 'wb-field' },
+              h('span', null, '首页标题'),
               h('input', {
                 className: 'wb-input',
-                value: tagDraft,
-                maxLength: 8,
-                placeholder: '新标签，比如「学校」',
-                onChange: function (ev) { tagDraft = ev.target.value; emit(); },
-                onKeyDown: function (ev) {
-                  if (ev.key !== 'Enter') return;
-                  ev.preventDefault();
-                  if (addTagOption(tagDraft)) { tagDraft = ''; emit(); }
-                }
-              }),
-              h('button', {
-                type: 'button',
-                className: 'wb-btn wb-btn--sm',
-                onClick: function () { if (addTagOption(tagDraft)) { tagDraft = ''; emit(); } }
-              }, '添加')
+                value: s.title,
+                maxLength: 24,
+                placeholder: DEFAULT_SETTINGS.title,
+                onChange: function (ev) { patchSettings({ title: ev.target.value }); }
+              })
+            ),
+            h('label', { className: 'wb-field' },
+              h('span', null, '副标题'),
+              h('input', {
+                className: 'wb-input',
+                value: s.subtitle,
+                maxLength: 80,
+                placeholder: DEFAULT_SETTINGS.subtitle,
+                onChange: function (ev) { patchSettings({ subtitle: ev.target.value }); }
+              })
             )
           ),
-          h('p', { className: 'wb-set-note' }, '首页卡片上右键可以给单词选标签（可多选）；顶部标签可快速筛选。删掉标签时，单词上的这个标签也会一起移除。'),
-          h('div', { className: 'wb-field' },
-            h('span', null, '单词本根目录'),
-            h('code', { className: 'wb-path' }, String(s.rootDirLabel || s.rootDir || DEFAULT_ROOT_LABEL)),
-            s.rootDirExists === false ? h('div', { className: 'wb-set-warn' },
-              h('b', null, '这个目录不存在'),
-              h('p', null, '换了电脑的话，点下面的「选择文件夹…」指到你的数据目录；新建的话直接点「恢复默认目录」或让插件创建。')
+
+          h(SettingsSection, { title: '字体', desc: '单词卡的大词头用一款，常用词组和例句用另一款。' },
+            h('label', { className: 'wb-field' },
+              h('span', null, '单词字体'),
+              h('select', {
+                className: 'wb-input wb-select',
+                value: s.fontWord,
+                onChange: function (ev) { patchSettings({ fontWord: ev.target.value }); }
+              },
+                FONT_CHOICES.map(function (name) {
+                  return h('option', { key: 'w-' + name, value: name }, name);
+                })
+              )
+            ),
+            h('label', { className: 'wb-field' },
+              h('span', null, '词组例句字体'),
+              h('select', {
+                className: 'wb-input wb-select',
+                value: s.fontPhrase,
+                onChange: function (ev) { patchSettings({ fontPhrase: ev.target.value }); }
+              },
+                FONT_CHOICES.map(function (name) {
+                  return h('option', { key: 'p-' + name, value: name }, name);
+                })
+              )
+            ),
+            h('p', { className: 'wb-set-note' }, IS_WIN
+              ? 'Patrick Hand、Kalam、Comic Neue、Caveat 已内置；Segoe Print 和 Comic Sans MS 用系统字体。'
+              : 'Patrick Hand、Kalam、Comic Neue、Caveat 已内置；Comic Sans MS 用系统字体。')
+          ),
+
+          h(SettingsSection, { title: '浏览与排序', desc: '首页的单词怎么分组、哪组排在前面。' },
+            h('div', { className: 'wb-field' },
+              h('span', null, '分组方式'),
+              h(Seg, {
+                field: 'groupBy',
+                value: s.groupBy,
+                options: [
+                  { v: 'date', label: '按日期' },
+                  { v: 'letter', label: '按首字母' },
+                  { v: 'length', label: '按字母数量' }
+                ]
+              })
+            ),
+            h('div', { className: 'wb-field' },
+              h('span', null, '排序方向'),
+              h(Seg, {
+                field: 'order',
+                value: s.order,
+                options: [
+                  { v: 'desc', label: '倒序' },
+                  { v: 'asc', label: '顺序' }
+                ]
+              })
+            ),
+            h('p', { className: 'wb-set-note' }, '排序方向决定组与组之间的先后；每组内部始终按加入时间从早到晚。')
+          ),
+
+          h(SettingsSection, { title: '标签', desc: '给单词做标记，首页能按标签筛。' },
+            h('div', { className: 'wb-field' },
+              h('div', { className: 'wb-taglist' },
+                STORE.tagList.length
+                  ? STORE.tagList.map(function (t) {
+                    const used = Object.keys(STORE.tags).filter(function (k) {
+                      return STORE.tags[k].indexOf(t) >= 0;
+                    }).length;
+                    return h('span', { className: 'wb-tagitem', key: t },
+                      t,
+                      h('em', null, String(used)),
+                      h('button', {
+                        type: 'button',
+                        className: 'wb-tagx',
+                        title: '删除标签 ' + t,
+                        'aria-label': '删除标签 ' + t,
+                        onClick: function () { removeTagOption(t); }
+                      }, h(XIcon, { size: 11 }))
+                    );
+                  })
+                  : h('span', { className: 'wb-tagnone' }, '还没有标签，在下面加一个')
+              ),
+              h('div', { className: 'wb-tagadd' },
+                h('input', {
+                  className: 'wb-input',
+                  value: tagDraft,
+                  maxLength: 8,
+                  placeholder: '新标签，比如「学校」',
+                  onChange: function (ev) { tagDraft = ev.target.value; emit(); },
+                  onKeyDown: function (ev) {
+                    if (ev.key !== 'Enter') return;
+                    ev.preventDefault();
+                    if (addTagOption(tagDraft)) { tagDraft = ''; emit(); }
+                  }
+                }),
+                h('button', {
+                  type: 'button',
+                  className: 'wb-btn wb-btn--sm',
+                  onClick: function () { if (addTagOption(tagDraft)) { tagDraft = ''; emit(); } }
+                }, '添加')
+              )
+            ),
+            h('p', { className: 'wb-set-note' }, '首页卡片上右键可以给单词选标签（可多选）；顶部标签可快速筛选。删掉标签时，单词上的这个标签也会一起移除。')
+          ),
+
+          h(SettingsSection, { title: '目录', desc: '单词、插图、发音都存在根目录里；新会话用工作目录。' },
+            h('div', { className: 'wb-field' },
+              h('span', null, '单词本根目录'),
+              h('code', { className: 'wb-path' }, String(s.rootDirLabel || s.rootDir || DEFAULT_ROOT_LABEL)),
+              s.rootDirExists === false ? h('div', { className: 'wb-set-warn' },
+                h('b', null, '这个目录不存在'),
+                h('p', null, '换了电脑的话，点下面的「选择文件夹…」指到你的数据目录；新建的话直接点「恢复默认目录」或让插件创建。')
+              ) : null,
+              h('div', { className: 'wb-set-row' },
+                h('button', { type: 'button', className: 'wb-mini', onClick: function () { pickFolder('rootDir'); } }, '选择文件夹…'),
+                h('button', { type: 'button', className: 'wb-mini', onClick: function () { openRootFolder(s.rootDir); } }, '打开文件夹'),
+                h('button', { type: 'button', className: 'wb-mini', onClick: function () { applyRootDir(''); } }, '恢复默认目录')
+              )
+            ),
+            STORE.pendingRoot ? h('div', { className: 'wb-set-warn' },
+              h('b', null, '目标目录里已经有单词数据'),
+              h('p', null, '要把现有数据一起迁移到 ' + STORE.pendingRoot + ' 吗？'),
+              h('div', { className: 'wb-set-row' },
+                h('button', { type: 'button', className: 'wb-btn wb-btn--sm', onClick: function () { confirmRootDir(true); } }, '迁移过去'),
+                h('button', { type: 'button', className: 'wb-mini', onClick: function () { confirmRootDir(false); } }, '不迁移，直接用这个目录')
+              )
             ) : null,
-            h('div', { className: 'wb-set-row' },
-              h('button', { type: 'button', className: 'wb-mini', onClick: function () { pickFolder('rootDir'); } }, '选择文件夹…'),
-              h('button', { type: 'button', className: 'wb-mini', onClick: function () { openRootFolder(s.rootDir); } }, '打开文件夹'),
-              h('button', { type: 'button', className: 'wb-mini', onClick: function () { applyRootDir(''); } }, '恢复默认目录')
+            h('div', { className: 'wb-field' },
+              h('span', null, '会话工作目录'),
+              h('code', { className: 'wb-path' }, String(s.workDirLabel || s.workDir || DEFAULT_WORKDIR_LABEL)),
+              h('div', { className: 'wb-set-row' },
+                h('button', { type: 'button', className: 'wb-mini', onClick: function () { pickFolder('workDir'); } }, '选择文件夹…'),
+                h('span', { className: 'wb-set-hint' }, '「+单词」新建的会话都用这个 DSH 工作目录，不存在会自动创建')
+              )
+            ),
+            h('div', { className: 'wb-field' },
+              h('span', null, '工作空间名称'),
+              h('input', {
+                className: 'wb-input',
+                value: String(s.workTitle || ''),
+                placeholder: '随记单词本',
+                onChange: function (ev) { patchSettings({ workTitle: ev.target.value }); }
+              }),
+              h('div', { className: 'wb-set-row' },
+                h('span', { className: 'wb-set-hint' }, '新建会话时会把这个目录注册成同名的 DSH 工作空间')
+              )
             )
           ),
-          STORE.pendingRoot ? h('div', { className: 'wb-set-warn' },
-            h('b', null, '目标目录里已经有单词数据'),
-            h('p', null, '要把现有数据一起迁移到 ' + STORE.pendingRoot + ' 吗？'),
-            h('div', { className: 'wb-set-row' },
-              h('button', { type: 'button', className: 'wb-btn wb-btn--sm', onClick: function () { confirmRootDir(true); } }, '迁移过去'),
-              h('button', { type: 'button', className: 'wb-mini', onClick: function () { confirmRootDir(false); } }, '不迁移，直接用这个目录')
-            )
-          ) : null,
-          h('div', { className: 'wb-field' },
-            h('span', null, '会话工作目录'),
-            h('code', { className: 'wb-path' }, String(s.workDirLabel || s.workDir || DEFAULT_WORKDIR_LABEL)),
-            h('div', { className: 'wb-set-row' },
-              h('button', { type: 'button', className: 'wb-mini', onClick: function () { pickFolder('workDir'); } }, '选择文件夹…'),
-              h('span', { className: 'wb-set-hint' }, '「+单词」新建的会话都用这个 DSH 工作目录，不存在会自动创建')
-            )
-          ),
-          h('div', { className: 'wb-field' },
-            h('span', null, '工作空间名称'),
-            h('input', {
-              className: 'wb-input',
-              value: String(s.workTitle || ''),
-              placeholder: '随记单词本',
-              onChange: function (ev) { patchSettings({ workTitle: ev.target.value }); }
-            }),
-            h('div', { className: 'wb-set-row' },
-              h('span', { className: 'wb-set-hint' }, '新建会话时会把这个目录注册成同名的 DSH 工作空间')
-            )
-          ),          h('div', { className: 'wb-field' },
-            h('span', null, '管理技能'),
-            h('div', { className: 'wb-set-row' },
-              h('button', {
-                type: 'button',
-                className: 'wb-btn wb-btn--sm',
-                onClick: function () { installSkill(); }
-              }, s.skillInstalled ? '重新安装技能' : '安装技能'),
-              h('span', { className: 'wb-set-hint' }, s.skillInstalled ? '已安装：~/.agents/skills/suiji-word-book/' : '装好后可用 /suiji-word-book 管理单词本')
-            )
-          ),
-          h('div', { className: 'wb-field' },
-            h('span', null, '首页「+单词」按钮'),
-            h('div', { className: 'wb-set-row' },
-              h('button', {
-                type: 'button',
-                className: 'wb-mini',
-                disabled: !s.skillInstalled,
-                title: s.skillInstalled ? '' : '先安装技能才能开启',
-                onClick: function () { patchSettings({ showAddWord: !s.showAddWord }); }
-              }, s.showAddWord ? '已显示（点我隐藏）' : '隐藏中（点我显示）'),
-              h('span', { className: 'wb-set-hint' }, s.skillInstalled ? '点击后用 DSH 新建会话，让技能来加单词' : '需先安装技能')
+
+          h(SettingsSection, { title: '技能与权限', desc: '让 AI 用技能帮你加单词、改插图，并决定新会话的权限。' },
+            h('div', { className: 'wb-field' },
+              h('span', null, '管理技能'),
+              h('div', { className: 'wb-set-row' },
+                h('button', {
+                  type: 'button',
+                  className: 'wb-btn wb-btn--sm',
+                  onClick: function () { installSkill(); }
+                }, s.skillInstalled ? '重新安装技能' : '安装技能'),
+                h('span', { className: 'wb-set-hint' }, s.skillInstalled ? '已安装：~/.agents/skills/suiji-word-book/' : '装好后可用 /suiji-word-book 管理单词本')
+              )
+            ),
+            h('div', { className: 'wb-field' },
+              h('span', null, '首页「+单词」按钮'),
+              h('div', { className: 'wb-set-row' },
+                h('button', {
+                  type: 'button',
+                  className: 'wb-mini',
+                  disabled: !s.skillInstalled,
+                  title: s.skillInstalled ? '' : '先安装技能才能开启',
+                  onClick: function () { patchSettings({ showAddWord: !s.showAddWord }); }
+                }, s.showAddWord ? '已显示（点我隐藏）' : '隐藏中（点我显示）'),
+                h('span', { className: 'wb-set-hint' }, s.skillInstalled ? '点击后用 DSH 新建会话，让技能来加单词' : '需先安装技能')
+              )
+            ),
+            h('div', { className: 'wb-field' },
+              h('span', null, '新建会话使用完全权限'),
+              h('div', { className: 'wb-set-row' },
+                h('button', {
+                  type: 'button',
+                  className: 'wb-mini',
+                  onClick: function () { patchSettings({ newSessionFullAccess: !(s.newSessionFullAccess !== false) }); }
+                }, (s.newSessionFullAccess !== false) ? '已开启（点我关闭）' : '已关闭（点我开启）'),
+                h('span', { className: 'wb-set-hint' }, '开启后「+单词」新建的会话自动切成 danger-full-access，不再逐次授权')
+              )
             )
           ),
-          h('div', { className: 'wb-field' },
-            h('span', null, '新建会话使用完全权限'),
-            h('div', { className: 'wb-set-row' },
-              h('button', {
-                type: 'button',
-                className: 'wb-mini',
-                onClick: function () { patchSettings({ newSessionFullAccess: !(s.newSessionFullAccess !== false) }); }
-              }, (s.newSessionFullAccess !== false) ? '已开启（点我关闭）' : '已关闭（点我开启）'),
-              h('span', { className: 'wb-set-hint' }, '开启后「+单词」新建的会话自动切成 danger-full-access，不再逐次授权')
+
+          h(SettingsSection, { title: '支持随记', desc: '如果对你有帮助，可以请我喝杯咖啡，感谢支持~' },
+            h('div', { className: 'wb-donate' },
+              h('div', { className: 'wb-donate-item' },
+                h('img', {
+                  className: 'wb-donate-img',
+                  src: pluginAsset('donate-wechat.webp'),
+                  alt: '微信收款码'
+                }),
+                h('span', { className: 'wb-donate-cap' }, '微信')
+              ),
+              h('div', { className: 'wb-donate-item' },
+                h('img', {
+                  className: 'wb-donate-img',
+                  src: pluginAsset('donate-alipay.webp'),
+                  alt: '支付宝收款码'
+                }),
+                h('span', { className: 'wb-donate-cap' }, '支付宝')
+              )
+            ),
+            h('div', { className: 'wb-cross' },
+              h('p', { className: 'wb-cross-desc' },
+                h('b', null, '「随记」'),
+                '：一个本地优先的 DSH 笔记插件，随手记一句，AI 帮你归档、整理成文章；和单词本一样，数据都存在本地。'
+              ),
+              h('div', { className: 'wb-cross-acts' },
+                h('button', {
+                  type: 'button',
+                  className: 'wb-mini',
+                  onClick: openNotesGithub
+                }, '去了解「随记」'),
+                h('button', {
+                  type: 'button',
+                  className: 'wb-btn wb-btn--sm',
+                  onClick: installNotes
+                }, '一键安装「随记」')
+              ),
+              STORE.notesState ? h('div', { className: 'wb-set-hint', style: { marginTop: 8 } }, STORE.notesState) : null
             )
           ),
+
           h('div', { className: 'wb-set-foot' },
             h('button', { type: 'button', className: 'wb-mini', onClick: resetSettings }, '恢复默认')
           )
@@ -2182,7 +2512,7 @@ window.__ModuleLoader__.load({
         h('div', { className: 'wb-settings', role: 'dialog', 'aria-modal': 'true', 'aria-label': w.word + ' 的设置' },
           h('div', { className: 'wb-set-head' },
             h('h2', null, w.word + ' 的设置'),
-            h('button', { type: 'button', className: 'wb-set-close', onClick: closeWordSettings, 'aria-label': '关闭' }, '×')
+            h('button', { type: 'button', className: 'wb-set-close', onClick: closeWordSettings, 'aria-label': '关闭' }, h(XIcon, { size: 16 }))
           ),
           h('div', { className: 'wb-field' },
             h('span', null, '插图'),
@@ -2236,20 +2566,35 @@ window.__ModuleLoader__.load({
         }
       }, [viewKey]);
 
-      return h('div', { className: 'wb-root' },
+      return h('div', {
+        className: 'wb-root',
+        style: {
+          '--wb-hand': FONT_STACKS[STORE.settings.fontWord] || FONT_STACKS[DEFAULT_WORD_FONT],
+          '--wb-fun': FONT_STACKS[STORE.settings.fontPhrase] || FONT_STACKS[DEFAULT_PHRASE_FONT]
+        }
+      },
         h('style', null, CSS),
         h('div', { className: 'wb-scroll', ref: scroll },
           h('div', { className: 'wb-wrap' },
             h('div', { className: 'wb-topbar' },
+              !entry ? h('div', { className: 'wb-brand' },
+                h('img', {
+                  src: pluginAsset('suiji-wordbook-icon.svg'),
+                  alt: '随记单词本',
+                  draggable: false
+                })
+              ) : null,
               entry ? h('button', {
                 type: 'button',
                 className: 'wb-back',
                 onClick: rec ? exitRecognition : (testing ? exitTest : goHome)
-              }, h('b', null, '←'), (testing || rec) ? '单词卡' : '单词本') : null,
+              }, h(ArrowLeftIcon, { size: 17 }), (testing || rec) ? '单词卡' : '单词本') : null,
               h('div', { className: 'wb-topbar-side' },
                 (!entry && st.settings.skillInstalled && st.settings.showAddWord) ? h('button', {
                   type: 'button',
-                  className: 'wb-mini',
+                  className: 'wb-add-ico',
+                  title: '添加单词',
+                  'aria-label': '添加单词',
                   onClick: function (ev) {
                     STORE.addWordState = '';
                     const rect = ev && ev.currentTarget ? ev.currentTarget.getBoundingClientRect() : null;
@@ -2260,22 +2605,38 @@ window.__ModuleLoader__.load({
                     };
                     emit();
                   }
-                }, '+单词') : null,
-                !entry ? h('button', { type: 'button', className: 'wb-mini wb-set-btn', onClick: openSettings }, '设定') : null,
+                },
+                  h('span', { className: 'plus', 'aria-hidden': true }, h(PlusIcon, { size: 17 })),
+                  h('span', { className: 'lbl', 'aria-hidden': true }, '单词')
+                ) : null,
+                !entry ? h('button', {
+                  type: 'button',
+                  className: 'wb-set-ico',
+                  title: '设定',
+                  'aria-label': '设定',
+                  onClick: openSettings
+                }, h(GearIcon, { size: 17 })) : null,
                 (entry && !testing && !rec) ? h('button', { type: 'button', className: 'wb-mini', onClick: function () { openWordSettings(entry.slug); } }, '设置') : null,
                 (entry && !testing && !rec) ? h('button', { type: 'button', className: 'wb-btn wb-btn--sm', onClick: startTest }, '拼写练习') : null,
                 (entry && !testing && !rec) ? h('button', { type: 'button', className: 'wb-btn wb-btn--sm', onClick: startRecognition }, '单词辨析') : null
               )
             ),
             !WORDS.length
-              ? h('div', { className: 'wb-empty' },
+              ? h('div', null,
+                h(Hero),
+                h('div', { className: 'wb-empty' },
                 STORE.settings.rootDirExists === false
                   ? h('span', null,
                       h('b', null, '单词本根目录不存在：'),
                       String(STORE.settings.rootDirLabel || STORE.settings.rootDir || ''),
                       h('br'),
                       '换了电脑的话，去「设定」里点「选择文件夹…」指到你的数据目录。')
-                  : '还没有单词。用「+单词」让技能添加，或在设定里确认「单词本根目录」。'
+                  : !STORE.settings.skillInstalled
+                    ? '还没有单词。先打开右上角「设定」，装好技能、打开「+单词」，之后让 AI 按你的词表做词卡。'
+                    : !STORE.settings.showAddWord
+                      ? '还没有单词。到「设定」里打开「+单词」，之后让 AI 按你的词表做词卡。'
+                      : '还没有单词。点「+单词」，把要学的词交给 AI 就行。'
+                )
               )
               : rec
                 ? h(RecognitionView)
@@ -2287,6 +2648,7 @@ window.__ModuleLoader__.load({
           )
         ),
         STORE.settingsOpen ? h(SettingsPanel) : null,
+        STORE.notice ? h('div', { className: 'wb-toast', role: 'status', 'aria-live': 'polite' }, STORE.notice) : null,
         STORE.addWordPop ? h(AddWordPopover) : null,
         STORE.wordSettings ? h(WordSettingsDialog) : null,
         STORE.menu ? h(TagMenu) : null
@@ -2298,6 +2660,34 @@ window.__ModuleLoader__.load({
 
     function PanelIcon(props) {
       const size = (props && typeof props.size === 'number') ? props.size : 20;
+      const iconUrl = pluginAsset('suiji-wordbook-icon.png');
+      /* 图没拿到（缺文件、宿主路由没挂上）就退回原来的书本图标 */
+      const [broken, setBroken] = useState(false);
+      useEffect(function () {
+        if (typeof Image !== 'function') return;
+        const probe = new Image();
+        probe.onerror = function () { setBroken(true); };
+        probe.src = iconUrl;
+        return function () { probe.onerror = null; };
+      }, []);
+
+      /* 颜色跟侧栏文字走：用图标做 alpha 蒙版，再拿 currentColor 上色，
+         亮色/暗色主题都自动贴合，和「随记」插件的图标是同一种处理。 */
+      const maskStyle = {
+        width: size,
+        height: size,
+        display: 'block',
+        backgroundColor: 'currentColor',
+        WebkitMaskImage: 'url("' + iconUrl + '")',
+        maskImage: 'url("' + iconUrl + '")',
+        WebkitMaskSize: 'contain',
+        maskSize: 'contain',
+        WebkitMaskRepeat: 'no-repeat',
+        maskRepeat: 'no-repeat',
+        WebkitMaskPosition: 'center',
+        maskPosition: 'center'
+      };
+
       return h('span', {
         style: {
           display: 'inline-flex',
@@ -2305,14 +2695,14 @@ window.__ModuleLoader__.load({
           justifyContent: 'center',
           width: size,
           height: size,
-          opacity: (props && props.active) ? 1 : .78
+          color: (props && props.active) ? 'var(--dsw-alias-brand-primary)' : 'currentColor'
         },
         onClick: function () {
           if (layoutRef && layoutRef.selectPanel) {
             try { layoutRef.selectPanel('word-book'); } catch (e) {}
           }
         }
-      }, h(BookGlyph, { size: size }));
+      }, broken ? h(BookGlyph, { size: size }) : h('span', { 'aria-hidden': true, style: maskStyle }));
     }
 
     return {

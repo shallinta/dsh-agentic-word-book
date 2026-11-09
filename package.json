@@ -1,9 +1,8 @@
 {
   "name": "@suiji-ai/dsh-agentic-word-book",
   "version": "1.0.0",
-  "private": true,
-  "description": "随记单词本：DSH 侧栏单词本插件。词条、插图、发音全部保存在本地单词本根目录，支持按标签筛选、自定义插图、拼写练习、单词辨析，并自带一套供 AI 管理数据的技能。",
   "type": "module",
+  "description": "随记单词本：DSH 本地单词本插件，一个词一页，插图、发音、词组、例句，带拼写练习和单词辨析。",
   "exports": {
     ".": "./index.js",
     "./client": "./client.js",
@@ -15,16 +14,13 @@
     "client.js",
     "cordis.patch.yml",
     "locale/*.json",
+    "assets",
+    "scripts/*",
     "icon.svg",
-    "skill-template.js"
-  ],
-  "keywords": [
-    "dsh",
-    "dsh-plugin",
-    "word-book",
-    "vocabulary",
-    "spaced-repetition",
-    "shuiji"
+    "skill-template.js",
+    "screenshots.json",
+    "README.md",
+    "LICENSE"
   ],
   "dsh": {
     "bundle": {
@@ -40,5 +36,28 @@
         "@deepseek-ai/dsh-client-ui-session"
       ]
     }
-  }
+  },
+  "publishConfig": {
+    "access": "public"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/shallinta/dsh-agentic-word-book.git"
+  },
+  "license": "MIT",
+  "author": "shallinta",
+  "homepage": "https://github.com/shallinta/dsh-agentic-word-book#readme",
+  "bugs": {
+    "url": "https://github.com/shallinta/dsh-agentic-word-book/issues"
+  },
+  "keywords": [
+    "dsh-plugin",
+    "deepseek-harness",
+    "word-book",
+    "vocabulary",
+    "flashcards",
+    "english-learning",
+    "spelling",
+    "local-first"
+  ]
 }

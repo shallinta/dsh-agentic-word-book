@@ -1,14 +1,114 @@
-# 随记单词本 · `@suiji-ai/dsh-agentic-word-book`
+# 随记单词本
 
-DSH 插件。左侧菜单一个书本图标，点开占据右侧整块面板：一个词一页，插图、音标、发音、常用词组、例句，
-外加**挖字母拼写练习**和**单词辨析选择题**。面板挂在全局面板槽上，**不跟会话绑定**，切走再切回来进度还在。
+<p align="center">
+  <img src="./assets/suiji-wordbook-logo.webp" alt="随记单词本 logo" width="220">
+</p>
 
-> 核心设计：**代码与数据分离**。插件包只有功能代码（约 105 KB），词条、插图、发音全部住在
-> 「单词本根目录」里（默认 `~/Documents/dsh/suiji-word-book/`）。换电脑只需要搬走这个目录。
+<p>
+  <img src="https://img.shields.io/badge/package-@suiji--ai%2Fdsh--agentic--word--book-FF8A5B?style=flat-square" alt="package">
+  <a href="https://github.com/shallinta/dsh-agentic-word-book"><img src="https://img.shields.io/badge/source-GitHub-181717?logo=github&style=flat-square" alt="GitHub"></a>
+  <img src="https://img.shields.io/badge/DSH-plugin-5B8DEF?style=flat-square" alt="DSH plugin">
+  <img src="https://img.shields.io/badge/storage-local%20files-2EA44F?style=flat-square" alt="local files">
+  <img src="https://img.shields.io/badge/license-MIT-FF8A5B?style=flat-square" alt="MIT">
+</p>
 
-[![GitHub](https://img.shields.io/badge/source-GitHub-181717?logo=github)](https://github.com/shallinta/dsh-agentic-word-book)
+一个词一页：插图、音标、发音、常用词组、例句都在上面，还有挖字母拼写练习和单词辨析选择题。切走再切回来，进度还在。
 
----
+## 为什么要用
+
+背单词的工具很多，难的是让每张卡都和你有关系。随记单词本从这几处入手。
+
+### 一个词就是一页
+
+插图、音标、发音、五条常用词组、一个例句，全在同一个页面里。翻到下一个词，翻页就行。
+
+### 练习围着这个词出
+
+拼写练习只挖当前这个词的字母，单词辨析的题干和选项也都锚定这个词。刚看完的内容马上就能练。
+
+### 加词只需要给单词
+
+点「+单词」输入几个想学的词，剩下的交给 AI：词条、占位插图、五条词组、例句和 7 段发音一次做完。
+
+### 标题、标签、插图都能自己定
+
+首页标题和副标题、标签选项、每个词的自定义插图，都在设定和卡片右键菜单里。卡片可以多选打标，首页按标签筛。
+
+### 数据是自己的
+
+词条、插图、发音都是本地文件，住在一个目录里。插件包只带功能代码，不带词库。换电脑时把目录搬走即可。
+
+## 演示视频
+
+https://github.com/user-attachments/assets/c1208dbd-7f37-454f-a2a8-3db14179d032
+
+从第一次使用开始，走完整个流程：安装插件、用「+单词」让 AI 建 5 张词卡、拼写练习、单词辨析、右键打标签。视频约 3 分钟。
+
+## 截图
+
+<table>
+  <tr>
+    <td align="center" width="50%">
+      <img src="./assets/screenshot-home.jpg" alt="首页"><br>
+      <sub>首页 · 单词卡按日期分组，标签可以快速筛选</sub>
+    </td>
+    <td align="center" width="50%">
+      <img src="./assets/screenshot-cards.jpg" alt="多个单词"><br>
+      <sub>首页 · 一次加几个词，全部落在同一页</sub>
+    </td>
+  </tr>
+  <tr>
+    <td align="center">
+      <img src="./assets/screenshot-word.jpg" alt="单词卡"><br>
+      <sub>单词卡 · 插图、音标、4 档倍速发音、5 条词组和 1 条例句</sub>
+    </td>
+    <td align="center">
+      <img src="./assets/screenshot-spell.jpg" alt="拼写练习"><br>
+      <sub>拼写练习 · 挖掉几个字母，把单词补全</sub>
+    </td>
+  </tr>
+  <tr>
+    <td align="center">
+      <img src="./assets/screenshot-quiz.jpg" alt="单词辨析"><br>
+      <sub>单词辨析 · 12 种题型轮换，帮你记住单词、释义和发音</sub>
+    </td>
+    <td></td>
+  </tr>
+</table>
+
+## 动图演示
+
+「+单词」把词表交给 AI：写词条、画插图、生成发音，一次做完。
+
+<img width="880" alt="新增单词演示" src="https://github.com/user-attachments/assets/991c9f54-5dc2-426e-b3f4-9b758ac79cc0" />
+
+标题、副标题和每个词的插图也能换成自己喜欢的风格。
+
+<img width="880" alt="自定义标题和插图" src="https://github.com/user-attachments/assets/63f777c0-073b-40d3-98a0-87c9e9232445" />
+
+## 安装
+
+把这段发给 DSH：
+
+```text
+请帮我安装 DSH 插件「随记单词本」：
+源码仓库 https://github.com/shallinta/dsh-agentic-word-book
+装好后左侧栏应该出现「随记单词本」，没出现就重启 DSH 或让模型检查插件状态。
+```
+
+本机已经有源码时，也可以从目录安装：让模型用 `plugin_manager` 的 `install_bundle`，target 指向本包目录。
+
+包名是 `@suiji-ai/dsh-agentic-word-book`。上架插件市场后，也可以在 DSH 的插件市场里搜索「随记单词本」安装。
+
+装好后左侧栏出现「随记单词本」；没出现就重启 DSH。
+
+## 第一次使用
+
+1. 打开左侧「随记单词本」。首次运行会自动建好单词本根目录（默认 `~/Documents/dsh/suiji-word-book/`）。
+2. 点右上角齿轮，进「技能与权限」，点「安装技能」。
+3. 把同一分区里的「+单词」按钮打开（默认是隐藏的）。
+4. 回首页点「+单词」，输入几个想学的词，回车。插件会新建一个会话，让 AI 去做词卡。
+5. 等 AI 做完，切回单词本刷新，卡片就出来了。
 
 ## 功能
 
@@ -17,12 +117,16 @@ DSH 插件。左侧菜单一个书本图标，点开占据右侧整块面板：�
 | 首页 | 单词卡网格；按日期 / 首字母 / 字母数量分组，可正序倒序；顶部标签筛选 |
 | 单词卡 | 大插图、手写体词头、音标、英文释义、发音（4 档倍速）、常用词组、例句 |
 | 拼写练习 | 挖字母填词，`Tab` 提示、`Esc` 换题、`Enter` 重听/下一题，答完自动进下一题 |
-| 单词辨析 | 固定 20 题四选一；12 种题型轮换，整套题锚定当前这个词 |
+| 单词辨析 | 12 种题型轮换，帮你记住单词、释义和发音 |
 | 标签 | 设定里配置标签选项，卡片右键多选打标，首页 chip 快速筛选 |
+| 设定 | 分组卡片：单词本、字体、浏览与排序、标签、目录、技能与权限、支持随记 |
+| 字体 | 单词字体、词组例句字体各选一款；内置 Patrick Hand、Kalam、Comic Neue、Caveat 四款开源字体 |
 | 自定义插图 | 卡片右键「替换插图…」/「恢复默认插图」；每个单词一个资源目录 |
-| 「+单词」 | 输入若干单词 → 插件新建会话、自动切过去、交给技能去制作单词卡 |
+| AI 加词 | 装好技能、打开「+单词」，把词表交给 AI：它写词条、画占位图、生成 7 段发音 |
 
----
+内置字体来自 Google Fonts，按 SIL Open Font License 1.1 分发，许可证文本在 `assets/fonts/`。
+
+「+单词」依赖管理技能。技能装在 `~/.agents/skills/suiji-word-book/`，里面有两个跨平台脚本：`create-word.mjs` 建占位词条和占位图，`make-audio.mjs` 合成发音（macOS 用 `say` + `afconvert`，Windows 用 System.Speech）。装好技能后，也可以直接让 AI 用 `/suiji-word-book` 改词条、打标签、换插图。
 
 ## 数据放在哪
 
@@ -37,112 +141,32 @@ DSH 插件。左侧菜单一个书本图标，点开占据右侧整块面板：�
     word.wav  p1..p5.wav  sentence.wav    发音
 ```
 
-`words.json` 词条字段：
+Windows 上默认在 `%USERPROFILE%\Documents\dsh\suiji-word-book\`。
 
-| 字段 | 含义 |
-|---|---|
-| `slug` | 小写单词，也是资源目录名 |
-| `word` / `ipa` / `pos` / `zh` / `en` | 词头、音标、词性、中文、英文释义 |
-| `created` | ISO 时间，决定首页排序与日期分组 |
-| `art` | **默认插图**相对路径（相对根目录） |
-| `customArt` | **自定义插图**相对路径；有值显示它，空串显示 `art` |
-| `wordAudio` / `phrases[].audio` / `sentence.audio` | 发音相对路径 |
+整个根目录就是全部数据。复制它，或者放进私有 Git 仓库、可信云盘，就能带走所有单词。
 
-页面取图只有一条规则：`src = customArt || art`。替换插图时只写 `customArt`，**默认图文件永不改动、也不允许同名覆盖**。
+## 数据与隐私
 
----
+- 词条、插图、发音只存在本地根目录，插件不上传任何数据，也没有遥测。
+- 只有点「+单词」让 AI 做词卡时，你输入的单词会发给 DSH 里配置的模型服务。
+- 插件更新不会动根目录里的内容；备份就是复制目录。
+- 词条里的文字和图片都是普通文件，随时可以用别的编辑器打开。
 
-## 安装
+## 随记系列
 
-把下面这段直接发给 DSH：
+如果你也想要一个本地优先的笔记插件，可以看看同系列的「随记」：[@suiji-ai/dsh-agentic-notes](https://github.com/shallinta/dsh-agentic-notes)。
 
-```text
-请帮我安装 DSH 插件「随记单词本」：
-包名 @suiji-ai/dsh-agentic-word-book
-源码仓库 https://github.com/shallinta/dsh-agentic-word-book
-装好后左侧栏应该出现「随记单词本」，没出现就检查插件状态或提示我重启。
-```
+## 支持随记
 
-> 本机已有源码时，也可以让模型从目录安装（`plugin_manager` 的 `install_bundle`，target 指向本包目录）。
-> 如果 HTTPS 拉不动，可以改用 SSH：`git@github.com:shallinta/dsh-agentic-word-book.git`
+如果对你有帮助，可以请我喝杯咖啡，感谢支持~
 
-装好后打开面板 → 右上角「设定」：
-
-1. 确认**单词本根目录**（默认 `~/Documents/dsh/suiji-word-book/`，可改、可恢复默认、可一键打开文件夹）
-2. 点**安装技能** → 写入 `~/.agents/skills/suiji-word-book/`
-3. 需要的话打开首页「+单词」按钮
-
----
-
-## 宿主接口
-
-浏览器半边通过同源 `fetch` 调宿主注册的路由。路由用
-`webServer.register({ kind: 'exact', path, handler })` 注册，**handler 收到的是 Node 的 `req`/`res`**，
-必须自己 `res.writeHead(...).end(...)`；返回 Web `Response` 会让请求挂住。
-
-| 路由 | 作用 |
-|---|---|
-| `GET  /suiji-word-book/state` | 设定 + 标签 + `words.json` |
-| `GET  /suiji-word-book/file?name=<相对路径>` | 按扩展名返回 `image/*` 或 `audio/wav` |
-| `POST /suiji-word-book/api` | 见下表 |
-
-`POST` 的 `{ op, args }`：
-
-| op | 作用 |
-|---|---|
-| `save` | 保存设定 / 标签（`words.json` 只由宿主写，客户端不上传） |
-| `root` | 换根目录；目标已有数据时返回 `needsMigration`，前端弹「迁移 / 不迁移」 |
-| `open-folder` | 用资源管理器 / Finder 打开目录 |
-| `art` / `art-clear` | 写入 / 清除某个词的自定义插图（只改 `customArt`） |
-| `install-skill` | 写 `~/.agents/skills/suiji-word-book/` |
-| `add-words` | 建工作空间 → 建会话 → 切「完全权限」→ 发提示词，返回 `sessionId` |
-
----
-
-## 管理技能
-
-`~/.agents/skills/suiji-word-book/`
-
-```
-SKILL.md                 目录结构、words.json 字段、常见操作、权限说明
-add-word.md              新增单词流程
-scripts/create-word.ps1  生成占位条目
-```
-
-技能里写明根目录、资源目录、`art`/`customArt` 两个字段的语义，agent 读完就能改设定、打标签、换插图、加单词。
-模板在 `skill-template.js`（生成时把真实根目录路径写进 SKILL.md）。
-
----
-
-## 开发
-
-```powershell
-cd plugins/word-book
-node build.mjs          # src/client.src.js -> client.js（只是复制，不含任何词库数据）
-```
-
-**改单词数据不需要构建**，直接改根目录里的文件，面板刷新即可。只有改界面代码才需要重新构建。
-
-### 目录结构
-
-| 文件 | 作用 |
-|---|---|
-| `index.js` | 宿主半边：路由、磁盘读写、技能安装、建会话 |
-| `skill-template.js` | 技能 markdown 模板 |
-| `src/client.src.js` | 浏览器半边源码（React，纯 JS 无 JSX） |
-| `client.js` | 构建产物（模块加载器读取） |
-| `package.json` | 包描述 + `dsh.bundle` / `dsh.client` 清单 |
-| `cordis.patch.yml` | 往 profile 插入 `word-book` 这一行 |
-| `locale/*.json` | 插件市场里的名字和描述 |
-| `icon.svg` | 插件图标 |
-
-### 实现要点
-
-- 面板注册在 `sidebar.panellist`（`id: word-book`）+ `main`（`key: word-book`）两个 root 槽，所以不跟会话
-- `main` 是 keyed 槽，切面板会卸载组件；页面状态放在模块级 `STORE`，靠 `emit()` 订阅恢复
-- 客户端 `inject` 必须有 `uiWorkspace`，否则拿不到 `openSession`
-- 切会话用 `uiWorkspace.openSession(sessionId)`（**传字符串**，不是 `{kind,sessionId}` 对象），
-  失败时依次退让为 `openWorkspace` 再开会话、写路由刷新
-- 新会话默认权限是 `workspace-write`；插件建完会话后用 `permissionPresets.set(session, 'danger-full-access')`
-  切成完全权限（可用 `settings.newSessionFullAccess=false` 关掉）
-
+<table>
+  <tr>
+    <td align="center"><strong>微信</strong></td>
+    <td align="center"><strong>支付宝</strong></td>
+  </tr>
+  <tr>
+    <td><img src="assets/donate-wechat.webp" width="200" alt="微信收款码"></td>
+    <td><img src="assets/donate-alipay.webp" width="200" alt="支付宝收款码"></td>
+  </tr>
+</table>

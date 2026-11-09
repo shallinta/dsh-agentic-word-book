@@ -13,7 +13,13 @@ import { existsSync, mkdirSync, readdirSync, readFileSync, statSync, writeFileSy
 import { spawn } from 'node:child_process'
 import { renderSkill, renderAddWord } from './skill-template.js'
 import { homedir } from 'node:os'
+import { fileURLToPath } from 'node:url'
 import path from 'node:path'
+
+/* 插件包目录：assets 里的 logo、收款码，scripts 里的跨平台脚本都从这里取 */
+const PKG_DIR = path.dirname(fileURLToPath(import.meta.url))
+const ASSET_DIR = path.join(PKG_DIR, 'assets')
+const SCRIPTS_DIR = path.join(PKG_DIR, 'scripts')
 
 const BASE = '/suiji-word-book'
 const IMG_TYPES = {
@@ -25,6 +31,7 @@ const IMG_TYPES = {
   '.webp': 'image/webp',
   '.gif': 'image/gif',
   '.svg': 'image/svg+xml',
+  '.woff2': 'font/woff2',
 }
 
 const WORKDIR_DEFAULT = path.join(homedir(), 'Documents', 'deepseek-harness', 'suiji-word-book')
@@ -126,6 +133,20 @@ function resolveRoot(raw) {
   const text = expandHome(raw)
   if (!text) return path.resolve(expandHome(DEFAULT_SETTINGS.rootDir))
   return path.resolve(text)
+}
+
+/* 首次安装：默认根目录还没建过就直接建出来。
+   判定依据是「没有根目录指针」且「默认目录里没有任何数据文件」——真·第一次打开。
+   用户后来把目录删了、或者把根目录换到别处，指针还在，这里就不插手。 */
+function ensureFirstRunRoot() {
+  try {
+    if (existsSync(rootPointerPath())) return
+    const dir = resolveRoot(DEFAULT_SETTINGS.rootDir)
+    const p = paths(dir)
+    if (existsSync(p.settings) || existsSync(p.meta) || existsSync(p.words)) return
+    mkdirSync(dir, { recursive: true })
+    writeRootPointer(dir)
+  } catch {}
 }
 
 function paths(rootDir) {
@@ -241,58 +262,27 @@ function skillDir() {
   return path.join(homedir(), '.agents', 'skills', SKILL_NAME)
 }
 
-const CREATE_WORD_PS1 = `param(
-  [Parameter(Mandatory = $true)][string]$Word,
-  [string]$Root = ''
-)
-$ErrorActionPreference = 'Stop'
-if (-not $Root) {
-  $settingsPath = Join-Path $env:USERPROFILE 'Documents\\dsh\\suiji-word-book\\settings.json'
-  if (Test-Path $settingsPath) { $Root = (Get-Content $settingsPath -Raw | ConvertFrom-Json).rootDir }
-  if ($Root -like '~*') {
-    $Root = Join-Path $env:USERPROFILE ($Root.Substring(1).TrimStart('\\', '/'))
-  }
-  if ($Root -match '%[A-Za-z_][A-Za-z0-9_]*%') {
-    $Root = [regex]::Replace($Root, '%([A-Za-z_][A-Za-z0-9_]*)%', { param($m) [Environment]::GetEnvironmentVariable($m.Groups[1].Value) })
-  }
-  if (-not $Root) { $Root = Join-Path $env:USERPROFILE 'Documents\\dsh\\suiji-word-book' }
-}
-$slug = $Word.Trim().ToLower()
-if (-not $slug) { throw 'word is empty' }
-foreach ($d in @($Root, (Join-Path $Root 'words'), (Join-Path $Root "words\$slug"))) {
-  if (-not (Test-Path $d)) { New-Item -ItemType Directory -Path $d -Force | Out-Null }
-}
-$entry = [ordered]@{
-  slug = $slug
-  word = $slug
-  created = (Get-Date -Format 'yyyy-MM-ddTHH:mm:ss')
-  ipa = '/?/'
-  pos = 'n.'
-  zh = '待填写'
-  en = '待填写'
-  art = "words/$slug/$slug.svg"
-  customArt = ""
-  phrases = @(
-    [ordered]@{ en = "$slug one"; zh = '待填写' },
-    [ordered]@{ en = "$slug two"; zh = '待填写' },
-    [ordered]@{ en = "$slug three"; zh = '待填写' },
-    [ordered]@{ en = "$slug four"; zh = '待填写' },
-    [ordered]@{ en = "$slug five"; zh = '待填写' }
-  )
-  sentence = [ordered]@{ en = "This is $slug."; zh = '待填写' }
-}
-$out = Join-Path $Root 'words.new.json'
-Set-Content -Path $out -Value (ConvertTo-Json -InputObject @($entry) -Depth 8) -Encoding UTF8
-Write-Output "wrote $out"
-`
-
 function installSkill(rootDir) {
   const dir = skillDir()
   mkdirSync(path.join(dir, 'scripts'), { recursive: true })
   writeFileSync(path.join(dir, 'SKILL.md'), renderSkill(rootDir), 'utf8')
   writeFileSync(path.join(dir, 'add-word.md'), renderAddWord(rootDir), 'utf8')
-  writeFileSync(path.join(dir, 'scripts', 'create-word.ps1'), CREATE_WORD_PS1, 'utf8')
-  return dir
+  /* 跨平台脚本直接从包里复制（create-word.mjs / make-audio.mjs），
+     不再内嵌 PowerShell，Windows 和 macOS 走同一套入口。 */
+  const copied = []
+  if (existsSync(SCRIPTS_DIR)) {
+    for (const name of readdirSync(SCRIPTS_DIR)) {
+      const from = path.join(SCRIPTS_DIR, name)
+      try {
+        if (!statSync(from).isFile()) continue
+        copyFileSync(from, path.join(dir, 'scripts', name))
+        copied.push(name)
+      } catch {}
+    }
+  }
+  /* 旧版本装出来的是 create-word.ps1，留着没用，顺手删掉 */
+  try { rmSync(path.join(dir, 'scripts', 'create-word.ps1'), { force: true }) } catch {}
+  return { dir, scripts: copied }
 }
 
 /* ---------------- 主入口 ---------------- */
@@ -303,6 +293,9 @@ export function apply(rootCtx) {
   rootCtx.inject(['webServer'], function (ctx) {
     const webServer = ctx.get('webServer')
     if (!webServer || typeof webServer.register !== 'function') return
+
+    /* 第一次装上插件就把默认目录准备好，别让人一进来先看到「目录不存在」 */
+    ensureFirstRunRoot()
 
   const trusted = (req, res) => {
     try {
@@ -426,9 +419,9 @@ export function apply(rootCtx) {
         }
 
         if (op === 'install-skill') {
-          const dir = installSkill(state.rootDir)
+          const installed = installSkill(state.rootDir)
           const next = saveState(state.rootDir, { settings: Object.assign({}, state.settings, { skillInstalled: true }) })
-          return sendJson(res, 200, { ok: true, skillDir: dir, state: next })
+          return sendJson(res, 200, { ok: true, skillDir: installed.dir, scripts: installed.scripts, state: next })
         }
 
         if (op === 'pick-folder') {
@@ -459,6 +452,51 @@ export function apply(rootCtx) {
             return sendJson(res, 200, { ok: false, error: String(err?.message ?? err) })
           }
         }
+        if (op === 'open-url') {
+          const url = String(args.url || '').trim()
+          if (!/^https?:\/\/[^\s]+$/i.test(url)) {
+            return sendJson(res, 200, { ok: false, error: 'bad url' })
+          }
+          try {
+            const child = process.platform === 'win32'
+              ? spawn('cmd', ['/c', 'start', '', url], { detached: true, stdio: 'ignore' })
+              : process.platform === 'darwin'
+                ? spawn('open', [url], { detached: true, stdio: 'ignore' })
+                : spawn('xdg-open', [url], { detached: true, stdio: 'ignore' })
+            if (child && typeof child.unref === 'function') child.unref()
+            return sendJson(res, 200, { ok: true, url })
+          } catch (err) {
+            return sendJson(res, 200, { ok: false, error: String(err?.message ?? err) })
+          }
+        }
+
+        if (op === 'install-notes') {
+          const controller = ctx.get('sessionController')
+          if (!controller || typeof controller.create !== 'function') {
+            return sendJson(res, 200, { ok: false, error: 'session controller unavailable' })
+          }
+          const workDir = ensureWorkDir(state.settings)
+          const signal = new AbortController().signal
+          const ws = await ensureWorkspace(ctx, state.settings, workDir)
+          const created = await controller.create(ws ? { workspaceId: ws.id } : { cwd: workDir })
+          const message = '请询问用户是否安装「随记」插件，用户同意后，安装这个随记插件：@suiji-ai/dsh-agentic-notes。' +
+            '如果用户希望了解随记插件，可以打开 github 地址：https://github.com/shallinta/dsh-agentic-notes'
+          if (typeof controller.prompt === 'function') {
+            await controller.prompt({
+              requestId: 'suiji-notes-' + Date.now().toString(36) + '-' + Math.random().toString(36).slice(2, 8),
+              sessionId: created.sessionId,
+              mode: 'queue',
+              content: [{ type: 'text', text: message }],
+            }, signal)
+          }
+          return sendJson(res, 200, {
+            ok: true,
+            sessionId: created.sessionId,
+            workspaceId: ws ? String(ws.id) : '',
+            workDir,
+          })
+        }
+
         if (op === 'add-words') {
           const words = (Array.isArray(args.words) ? args.words : [])
             .map((w) => String(w || '').trim().toLowerCase())
@@ -531,6 +569,40 @@ export function apply(rootCtx) {
         const ext = path.extname(name).toLowerCase()
         const type = IMG_TYPES[ext] || (ext === '.wav' ? 'audio/wav' : 'application/octet-stream')
         res.writeHead(200, { 'Content-Type': type, 'Cache-Control': 'private, max-age=60' })
+        res.end(readFileSync(file))
+      } catch {
+        res.statusCode = 404
+        res.end()
+      }
+    },
+  }))
+
+  /* 包里自带的静态资源：logo、插件图标、收款码。只认 assets/ 下的文件名，不出目录 */
+  disposers.push(webServer.register({
+    kind: 'exact',
+    path: BASE + '/asset',
+    handler: async (req, res) => {
+      if (!trusted(req, res)) return
+      try {
+        const url = new URL(req.url, 'http://localhost')
+        const raw = decodeURIComponent(url.searchParams.get('name') || '').replace(/\\/g, '/')
+        if (!raw || raw.startsWith('/') || raw.split('/').indexOf('..') >= 0) {
+          res.statusCode = 400
+          return res.end()
+        }
+        const root = path.resolve(ASSET_DIR)
+        const file = path.resolve(root, raw)
+        if (file !== root && !file.startsWith(root + path.sep)) {
+          res.statusCode = 400
+          return res.end()
+        }
+        if (!existsSync(file) || !statSync(file).isFile()) {
+          res.statusCode = 404
+          return res.end()
+        }
+        const ext = path.extname(file).toLowerCase()
+        const type = IMG_TYPES[ext] || 'application/octet-stream'
+        res.writeHead(200, { 'Content-Type': type, 'Cache-Control': 'public, max-age=86400' })
         res.end(readFileSync(file))
       } catch {
         res.statusCode = 404
