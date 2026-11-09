@@ -2544,7 +2544,6 @@ window.__ModuleLoader__.load({
                 : h('span', { className: 'wb-tagnone' }, '还没有标签，去「设定」里加几个')
             )
           ),
-          h('p', { className: 'wb-set-note' }, '以后单词级的新设置项都会加在这里。')
         )
       );
     }
@@ -2618,7 +2617,13 @@ window.__ModuleLoader__.load({
                   'aria-label': '设定',
                   onClick: openSettings
                 }, h(GearIcon, { size: 17 })) : null,
-                (entry && !testing && !rec) ? h('button', { type: 'button', className: 'wb-mini', onClick: function () { openWordSettings(entry.slug); } }, '设置') : null,
+                (entry && !testing && !rec) ? h('button', {
+                  type: 'button',
+                  className: 'wb-set-ico',
+                  title: '设置',
+                  'aria-label': '设置',
+                  onClick: function () { openWordSettings(entry.slug); }
+                }, h(GearIcon, { size: 17 })) : null,
                 (entry && !testing && !rec) ? h('button', { type: 'button', className: 'wb-btn wb-btn--sm', onClick: startTest }, '拼写练习') : null,
                 (entry && !testing && !rec) ? h('button', { type: 'button', className: 'wb-btn wb-btn--sm', onClick: startRecognition }, '单词辨析') : null
               )
