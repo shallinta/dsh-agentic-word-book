@@ -11,8 +11,13 @@
  *       macOS  ：say + afconvert，输出 11025 Hz 单声道 WAV；默认声音 Samantha。
  *       Windows：powershell + System.Speech，SpeechAudioFormatInfo(11025, 16bit, Mono)。
  *       Linux  ：espeak-ng，输出采样率不保证 11025 Hz，生成后会提示自行确认。
- *   - 每个词条生成 word.wav、p1.wav–p5.wav、sentence.wav 共 7 个文件，
- *     放在 words/<slug>/ 下，路径按 words/<slug>/xxx.wav 写回词条。
+ *   - 每个词条先生成 word.wav、p1.wav–p5.wav，放在 words/<slug>/ 下，
+ *     路径按 words/<slug>/xxx.wav 写回词条。
+ *   - 例句音频按词条结构区分：
+ *       旧结构（无 senses / sentences）：单个 sentence → sentence.wav；
+ *       有 senses 数组：每个有句子的 sense → sentence-<序号>.wav（下标 + 1）；
+ *       顶层 sentences 数组：第 n 条 → sentence-<n>.wav。
+ *     句子英文为空就跳过，不生成文件、audio 留空串；文件名不因跳过而挪位。
  *   - 每段都检查文件存在且大于 0 字节；任何一段失败立刻退出码 1，并说明是哪一段。
  *   - 文本一律通过参数数组传给子进程，不拼 shell；Windows 的文本写进临时 .ps1，
  *     只把文件路径交给 -Command。words.json 写入保持 2 空格缩进 + 末尾换行，
@@ -332,13 +337,11 @@ function segmentsOf(entry) {
   const slug = entry.slug
   const dir = `words/${slug}`
   const phrases = Array.isArray(entry.phrases) ? entry.phrases : []
-  const sentence = entry.sentence && typeof entry.sentence === 'object' ? entry.sentence : {}
   const segs = [
     {
       label: '单词 word.wav',
       text: String(entry.word || slug || ''),
-      rel: `${dir}/word.wav`,
-      field: 'wordAudio'
+      rel: `${dir}/word.wav`
     }
   ]
   for (let i = 0; i < 5; i++) {
@@ -346,17 +349,84 @@ function segmentsOf(entry) {
     segs.push({
       label: `第 ${i + 1} 条词组 p${i + 1}.wav`,
       text: String(phrase.en || ''),
-      rel: `${dir}/p${i + 1}.wav`,
-      field: `phrases[${i}].audio`
+      rel: `${dir}/p${i + 1}.wav`
     })
   }
+  return segs
+}
+
+function sentenceOf(holder) {
+  if (!holder || typeof holder !== 'object') return null
+  return holder.sentence && typeof holder.sentence === 'object' ? holder.sentence : null
+}
+
+/* 多词性时顶层 sentence 是第一个释义的副本；只有文本一致才同步音频，
+   避免把第一个释义的音频指给一段不同的句子 */
+function firstSenseCopyOf(entry) {
+  const senses = Array.isArray(entry.senses) ? entry.senses : []
+  const first = sentenceOf(senses[0])
+  const copy = sentenceOf(entry)
+  if (!first || !copy) return null
+  return String(copy.en || '').trim() === String(first.en || '').trim() ? copy : null
+}
+
+/* 句子分段：每条都带自己的文件名和写回位置。
+   没有 en 的句子也保留在列表里，生成时跳过，并把 audio 清成空串。 */
+function sentenceSegmentsOf(entry) {
+  const dir = `words/${entry.slug}`
+  const segs = []
+  const senses = Array.isArray(entry.senses) ? entry.senses : []
+  if (senses.length) {
+    for (let i = 0; i < senses.length; i++) {
+      const sentence = sentenceOf(senses[i])
+      if (!sentence) continue
+      const rel = `${dir}/sentence-${i + 1}.wav`
+      const copy = i === 0 ? firstSenseCopyOf(entry) : null
+      segs.push({
+        label: `第 ${i + 1} 个释义的例句 sentence-${i + 1}.wav`,
+        text: String(sentence.en || ''),
+        rel,
+        apply: (done) => {
+          const value = done ? rel : ''
+          sentence.audio = value
+          if (copy) copy.audio = value
+        }
+      })
+    }
+    return { segs, structure: 'senses' }
+  }
+  const sentences = Array.isArray(entry.sentences) ? entry.sentences : []
+  if (sentences.length) {
+    for (let i = 0; i < sentences.length; i++) {
+      const sentence = sentences[i]
+      if (!sentence || typeof sentence !== 'object') continue
+      const rel = `${dir}/sentence-${i + 1}.wav`
+      segs.push({
+        label: `第 ${i + 1} 条例句 sentence-${i + 1}.wav`,
+        text: String(sentence.en || ''),
+        rel,
+        apply: (done) => { sentence.audio = done ? rel : '' }
+      })
+    }
+    return { segs, structure: 'sentences' }
+  }
+  const sentence = sentenceOf(entry)
+  if (!sentence) return { segs, structure: 'none' }
+  const rel = `${dir}/sentence.wav`
   segs.push({
     label: '例句 sentence.wav',
     text: String(sentence.en || ''),
-    rel: `${dir}/sentence.wav`,
-    field: 'sentence.audio'
+    rel,
+    apply: (done) => { sentence.audio = done ? rel : '' }
   })
-  return segs
+  return { segs, structure: 'sentence' }
+}
+
+const WRITE_BACK_NOTE = {
+  senses: 'wordAudio / phrases[].audio / senses[].sentence.audio',
+  sentences: 'wordAudio / phrases[].audio / sentences[].audio',
+  sentence: 'wordAudio / phrases[].audio / sentence.audio',
+  none: 'wordAudio / phrases[].audio'
 }
 
 function processEntry(entry, root, wordsFile, list, hadBom, voice, index) {
@@ -391,13 +461,36 @@ function processEntry(entry, root, wordsFile, list, hadBom, voice, index) {
     }
   }
 
-  /* 全部 7 段成功后再写回路径 */
+  const { segs: sentenceSegs, structure } = sentenceSegmentsOf(entry)
+  const sentenceFiles = []
+  let skipped = 0
+  for (const seg of sentenceSegs) {
+    if (!seg.text.trim()) {
+      /* 空句子跳过，已有 audio 清成空串，文件名序号不变 */
+      seg.apply(false)
+      skipped += 1
+      continue
+    }
+    const outWav = path.join(root, seg.rel)
+    try {
+      const result = synthesize(seg.text, outWav, voice)
+      if (result.note && !notes.includes(result.note)) notes.push(result.note)
+      if (result.extraNote && !notes.includes(result.extraNote)) notes.push(result.extraNote)
+      usedVoice = result.voice || usedVoice
+      verifyWav(outWav, seg.label)
+    } catch (err) {
+      throw new Error(`[${slug}] ${seg.label}：${err.message}`)
+    }
+    seg.apply(true)
+    sentenceFiles.push(path.basename(seg.rel))
+  }
+
+  /* 单词、词组和例句音频都成功后再写回路径 */
   entry.wordAudio = `words/${slug}/word.wav`
   for (let i = 0; i < 5; i++) entry.phrases[i].audio = `words/${slug}/p${i + 1}.wav`
-  entry.sentence.audio = `words/${slug}/sentence.wav`
   writeWords(wordsFile, list, hadBom)
 
-  return { usedVoice, notes }
+  return { usedVoice, notes, structure, sentenceFiles, skipped }
 }
 
 /* ---------- 主流程 ---------- */
@@ -445,10 +538,14 @@ function main() {
       fail(err.message)
     }
     for (const note of result.notes) console.log(`⚠ ${note}`)
-    console.log(`✅ ${entry.slug}：7/7 段音频已生成 → ${path.join(root, 'words', entry.slug)}`)
+    const total = 7 + result.sentenceFiles.length
+    console.log(`✅ ${entry.slug}：${total}/${total} 段音频已生成 → ${path.join(root, 'words', entry.slug)}`)
     console.log(`   声音：${result.usedVoice}`)
-    console.log(`   word.wav · p1.wav … p5.wav · sentence.wav（WAV）`)
-    console.log(`   已写回 words.json：wordAudio / phrases[].audio / sentence.audio`)
+    const sentencePart = result.sentenceFiles.length ? ` · ${result.sentenceFiles.join(' · ')}` : ''
+    console.log(`   word.wav · p1.wav … p5.wav${sentencePart}（WAV）`)
+    const skippedPart = result.skipped ? `（跳过 ${result.skipped} 段空句子）` : ''
+    console.log(`   句子 ${result.sentenceFiles.length} 段${skippedPart}`)
+    console.log(`   已写回 words.json：${WRITE_BACK_NOTE[result.structure] || WRITE_BACK_NOTE.none}`)
     done += 1
   }
 

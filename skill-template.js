@@ -53,14 +53,16 @@ ${rootDir}
 - \`art\`：**默认插图**的相对路径（相对根目录），始终指向 \`words/<slug>/...\`
 - \`customArt\`：**自定义插图**的相对路径；有值就显示它，空串就显示 \`art\`
 - 其余 \`audio\` 字段同理，都是相对根目录的路径
+- 一个词可以有多个词性/释义，放在 \`senses\` 数组里：每个 sense 有自己的 \`pos\` / \`zh\` / \`en\` / \`sentence\`，例句音频从 \`sentence-1.wav\` 起按序号命名；没有 \`senses\` 时用旧的单套字段（\`sentence\` 对应 \`sentence.wav\`）
 
 ## 常见操作
 
 - **改标题/副标题/分组**：改 \`settings.json\`，不要动 \`rootDir\` / \`workDir\`
 - **新建会话**：DSH 工作目录用 \`workDir\`（默认 \`~/Documents/deepseek-harness/suiji-ai/\`），不存在就创建；工作空间名用 \`workTitle\`（默认「随记」）
 - **打标签**：先把新标签加进 \`meta.json\` 的 \`tagList\`，再写进 \`tags[slug]\`
-- **换插图**：图片放进 \`words/<slug>/\`，文件名以 \`custom-\` 开头（**不要覆盖 \`art\` 指向的默认图**），再把相对路径写进该词条的 \`customArt\`
+- **换插图**：用户明确要给某张已有词卡换图时才用。图片放进 \`words/<slug>/\`，文件名以 \`custom-\` 开头（**不要覆盖 \`art\` 指向的默认图**），再把相对路径写进该词条的 \`customArt\`
 - **恢复默认插图**：把 \`customArt\` 置成空串即可；默认图文件不要删
+- **新词卡的插图**：画好后直接作为默认插图（覆盖 \`words/<slug>/<slug>.svg\` 或改 \`art\` 指向新文件），\`customArt\` 保持空串
 - **加单词**：见 \`add-word.md\`（用 \`scripts/create-word.mjs\` 建占位词条、\`scripts/make-audio.mjs\` 生成发音，macOS / Windows 通用）
 
 改完文件后，在单词本面板刷新页面即可看到。
@@ -83,34 +85,73 @@ node "<skill目录>/scripts/create-word.mjs" --root "${rootDir}" --word "apple"
 技能目录通常是 \`~/.agents/skills/suiji-word-book\`，Windows 上是 \`%USERPROFILE%\\.agents\\skills\\suiji-word-book\`。这一步会：
 
 - 建资源目录 \`words/<slug>/\`
-- 写一张 320×240 的占位插图 \`words/<slug>/<slug>.svg\`（扁平风，主色 #FF8A5B / #8FD4FF / #FFD166 / #6FB84F）
+- 写一张 320×240 的占位插图 \`words/<slug>/<slug>.svg\`（扁平风，主色 #FF8A5B / #8FD4FF / #FFD166 / #6FB84F）。它只是临时顶着，最后会被第 3 步画的真正插图替换
 - 在 \`words.json\` 追加占位词条
 
 \`slug\` 由单词小写得到，只能是小写字母开头，后接小写字母、连字符或撇号（如 \`apple\`、\`ice-cream\`、\`o'clock\`）。词条已存在时脚本会拒绝执行；确需重建占位内容时加 \`--force\`（只补空缺字段，不覆盖已填内容）。
 
 ## 2. 填字段
 
-编辑 \`words.json\` 里新追加的词条：\`ipa\`、\`pos\`、\`zh\`、\`en\`、\`artAlt\`、5 条 \`phrases[].en\` / \`phrases[].zh\`、\`sentence.en\` / \`sentence.zh\`。
+先判断这个单词有几个词性，再决定用哪种结构。
 
-\`art\` 指向默认插图，\`customArt\` 留空串；\`created\` 用脚本写入的时间，不要改。
+- **一个词性**：沿用旧结构，直接填 \`ipa\`、\`pos\`、\`zh\`、\`en\`、\`artAlt\`、5 条 \`phrases[].en\` / \`phrases[].zh\`、\`sentence.en\` / \`sentence.zh\`。例句音频仍然叫 \`sentence.wav\`。
+- **多个词性**：建 \`senses\` 数组，一个词性一条，各自填 \`pos\`、\`zh\`、\`en\`、\`sentence\`，尽量每个词性都配一个例句；顶层的 \`pos\` / \`zh\` / \`en\` / \`sentence\` 保留成第一个词性的副本，不要删。
 
-## 3. 生成音频
+每个词性默认只写一个中文释义。只有用户明确要求同一个词性下增加释义时，才再补一条同 \`pos\` 的 sense。
+
+\`place\`（n. 地方 / v. 放置）的片段：
+
+\`\`\`json
+"senses": [
+  {
+    "pos": "n.",
+    "zh": "地方",
+    "en": "a particular position or area",
+    "sentence": { "en": "This is a quiet place.", "zh": "这是个安静的地方。", "audio": "words/place/sentence-1.wav" }
+  },
+  {
+    "pos": "v.",
+    "zh": "放置",
+    "en": "to put something somewhere",
+    "sentence": { "en": "Place the cup on the table.", "zh": "把杯子放在桌上。", "audio": "words/place/sentence-2.wav" }
+  }
+]
+\`\`\`
+
+\`audio\` 留空串也行，下一步生成后会自动写回。\`art\` 指向默认插图，\`customArt\` 留空串；\`created\` 用脚本写入的时间，不要改。
+
+## 3. 画插图
+
+按单词的意思画一张 320×240 的插图，把它变成**默认插图**：
+
+- 画成 SVG：直接覆盖 \`words/<slug>/<slug>.svg\`，\`art\` 路径不用改（还是 \`words/<slug>/<slug>.svg\`）
+- 只能输出位图：存成 \`words/<slug>/<slug>.png\`（或 .webp / .jpg），把词条的 \`art\` 改成这个路径，并删掉占位用的 \`<slug>.svg\`
+
+\`customArt\` 保持空串。新词卡的插图就是默认插图，不是自定义插图。
+
+## 4. 生成音频
 
 \`\`\`text
 node "<skill目录>/scripts/make-audio.mjs" --root "${rootDir}" --slug apple
 \`\`\`
 
-生成 7 段 11025 Hz 单声道 WAV 到 \`words/<slug>/\`：\`word.wav\`、\`p1.wav\`–\`p5.wav\`、\`sentence.wav\`，并把相对路径自动写回词条的 \`wordAudio\` / \`phrases[].audio\` / \`sentence.audio\`。
+每个词条先写 \`word.wav\`、\`p1.wav\`–\`p5.wav\`，再按结构写例句音频，全部是 11025 Hz 单声道 WAV，放在 \`words/<slug>/\`：
+
+- 旧结构（单个 \`sentence\`）：\`sentence.wav\`
+- 多词性（\`senses\` 数组）：第 1 个 sense 用 \`sentence-1.wav\`，第 2 个用 \`sentence-2.wav\`，序号按 sense 的位置算；某个 sense 没写例句就跳过，后面的文件序号不挪位
+- 顶层 \`sentences\` 数组：第 1 条 \`sentence-1.wav\`，第 2 条 \`sentence-2.wav\`，以此类推
+
+句子英文为空的不生成音频，\`audio\` 留空串。路径会自动写回 \`wordAudio\`、\`phrases[].audio\`，例句写回 \`sentence.audio\`、\`senses[i].sentence.audio\` 或 \`sentences[i].audio\`。
 
 - macOS：\`say\`（默认声音 Samantha，可用 \`--voice "名字"\` 换）+ \`afconvert\`
 - Windows：PowerShell 调用 \`System.Speech\`，\`--voice\` 对应 \`SelectVoice\`
 - Linux：\`espeak-ng\`，输出采样率不保证 11025 Hz
 
-要处理全部词条可把 \`--slug apple\` 换成 \`--all\`。任何一段生成失败，脚本都会指出是哪个文件并以非 0 退出。
+要处理全部词条可把 \`--slug apple\` 换成 \`--all\`。任何一段生成失败，脚本都会指出是哪个文件并以非 0 退出；结束时打印生成了几段例句音频。
 
-## 4. 刷新单词本面板确认
+## 5. 刷新单词本面板确认
 
-约定：\`created\` 用当前时间；一词 5 词组 + 1 例句；不要改 \`rootDir\`。
+约定：\`created\` 用当前时间；一词 5 词组 + 1 条例句（多词性时每个词性各配一条）；不要改 \`rootDir\`。
 
 ## 权限
 

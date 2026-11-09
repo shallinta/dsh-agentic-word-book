@@ -54,6 +54,9 @@ window.__ModuleLoader__.load({
 .wb-root input:focus-visible,.wb-root select:focus-visible,.wb-root textarea:focus-visible{outline:none}
 
 .wb-scroll{flex:1 1 auto;min-height:0;overflow-y:auto;overflow-x:hidden;overscroll-behavior:contain}
+.wb-fab{position:absolute;right:24px;bottom:24px;z-index:15;width:44px;height:44px;border-radius:50%;display:grid;place-items:center;color:#fff;background:linear-gradient(180deg,#FFA177,var(--wb-coral));box-shadow:0 14px 28px -12px rgba(242,112,63,.9);transition:transform .16s,filter .16s}
+.wb-fab:hover{transform:translateY(-2px);filter:brightness(1.03)}
+.wb-fab:active{transform:translateY(0) scale(.97)}
 .wb-wrap{width:100%;max-width:1200px;margin:0 auto;padding:10px 12px 40px}
 
 /* ---------- 顶栏：返回 + 主操作 ---------- */
@@ -104,6 +107,7 @@ window.__ModuleLoader__.load({
 .wb-hero-tags{position:absolute;top:0;right:0;display:flex;gap:6px;max-width:70%;z-index:2;padding-bottom:6px}
 .wb-hero-tag{font-size:calc(12px * var(--wb-scale));color:#7A6BA8;background:#F3EFFF;border:1px solid #E4DBFA;border-radius:999px;padding:3px 11px;white-space:nowrap;line-height:1.5}
 .wb-hero-tag--more{color:#9C8EC0;background:transparent;border-style:dashed}
+.wb-hero-tag.wb-hero-tag--mastered{color:#2E7D5B;background:#E7F7EF;border-color:#C4E8D6}
 .wb-art{border-radius:22px;overflow:hidden;background:#F7FBFF;aspect-ratio:4/3;display:grid;place-items:center;border:1px solid var(--wb-line)}
 .wb-art img{width:100%;height:100%;object-fit:cover;display:block}
 .wb-headword{min-width:0}
@@ -116,6 +120,11 @@ window.__ModuleLoader__.load({
 .wb-endef{font-size:calc(13.5px * var(--wb-scale));color:var(--wb-muted);font-style:italic}
 .wb-mean{margin-top:10px;font-size:calc(20px * var(--wb-scale));line-height:1.5;color:var(--wb-ink-soft)}
 .wb-pos{display:inline-block;font-size:calc(12px * var(--wb-scale));font-weight:700;color:var(--wb-coral-2);background:#FFF0E9;border-radius:8px;padding:2px 8px;margin-right:8px;vertical-align:2px}
+.wb-mean--multi{display:flex;flex-wrap:wrap;align-items:center;gap:4px 20px}
+.wb-sense{display:inline-flex;align-items:center;line-height:inherit}
+.wb-sense .wb-pos{margin-right:6px}
+.wb-sent + .wb-sent{margin-top:10px}
+.wb-sent .wb-pos{font-size:calc(11px * var(--wb-scale));padding:1px 6px;margin-right:6px;vertical-align:1px}
 
 /* ---------- 喇叭 ---------- */
 .wb-speak{flex:none;display:grid;place-items:center;width:46px;height:46px;border-radius:50%;background:#EFF3FF;color:var(--wb-sky);border:1px solid #DCE4FF;transition:transform .15s,background .18s}
@@ -227,7 +236,12 @@ window.__ModuleLoader__.load({
 .wb-art-preview{width:136px;aspect-ratio:4/3;object-fit:cover;border-radius:12px;border:1px solid var(--wb-line);background:#F7FBFF;flex:none}
 .wb-art-acts{display:flex;flex-direction:column;gap:6px;align-items:flex-start}
 /* ---------- 标签 ---------- */
-.wb-filters{display:flex;flex-wrap:wrap;gap:8px;margin:16px auto 0;max-width:980px}
+.wb-filters{display:flex;flex-wrap:wrap;align-items:center;gap:8px;margin:16px auto 0;max-width:980px}
+.wb-filters .wb-chip--mastered{margin-left:auto}
+.wb-chip-dot{width:8px;height:8px;border-radius:50%;border:1px solid #B9B2CC;background:transparent;flex:none}
+.wb-chip--mastered[aria-pressed="true"] .wb-chip-dot{background:#fff;border-color:#fff}
+.wb-btn--danger{background:linear-gradient(180deg,#F27C7F,var(--wb-red));box-shadow:0 14px 26px -12px rgba(229,72,77,.8)}
+.wb-danger-zone{margin-top:6px;padding-top:14px;border-top:1px dashed var(--wb-line-strong)}
 .wb-chip{display:inline-flex;align-items:center;gap:6px;padding:7px 14px;border-radius:999px;background:#FBF8FF;border:1px solid var(--wb-line-strong);color:var(--wb-ink-soft);font-size:calc(13px * var(--wb-scale));transition:background .14s,border-color .14s,color .14s}
 .wb-chip:hover{background:#F4EEFF;border-color:#E0D2FA}
 .wb-chip[aria-pressed="true"]{background:linear-gradient(180deg,#FFA177,var(--wb-coral));border-color:var(--wb-coral);color:#fff;font-weight:600}
@@ -236,6 +250,8 @@ window.__ModuleLoader__.load({
 .wb-chip--clear{background:transparent;border-style:dashed;color:var(--wb-muted)}
 .wb-tags{display:flex;flex-wrap:wrap;gap:5px;padding:8px 4px 0}
 .wb-tag{font-size:calc(11px * var(--wb-scale));color:#7A6BA8;background:#F3EFFF;border:1px solid #E4DBFA;border-radius:999px;padding:2px 9px;line-height:1.6}
+.wb-tag-dot{display:inline-block;width:6px;height:6px;border-radius:50%;background:currentColor;opacity:.8;margin-right:4px;vertical-align:1px}
+.wb-tag.wb-tag--mastered{color:#2E7D5B;background:#E7F7EF;border-color:#C4E8D6}
 
 /* ---------- 新增单词浮层 ---------- */
 .wb-pop-mask{position:fixed;inset:0;z-index:40}
@@ -274,6 +290,7 @@ window.__ModuleLoader__.load({
 .wb-set-ico:hover{background:#F3EDFF;color:var(--wb-ink)}
 .wb-set-ico:active{transform:scale(.96)}
 .wb-set-ico svg{display:block}
+.wb-set-ico--lg{width:44px;height:44px}
 
 /* 「+单词」：平时是跟设定一样大的圆，hover / 键盘聚焦时拉长成「+ 单词」 */
 .wb-add-ico{flex:none;display:inline-flex;align-items:center;justify-content:center;width:34px;height:34px;padding:0;border-radius:999px;overflow:hidden;color:var(--wb-ink-soft);background:#FAF7FF;border:1px solid var(--wb-line-strong);transition:width .2s ease,background .16s,color .16s,border-color .16s}
@@ -289,9 +306,11 @@ window.__ModuleLoader__.load({
 .wb-set-head h2{margin:0;display:flex;align-items:center;gap:9px;font-size:calc(15.5px * var(--wb-scale));font-weight:600}
 .wb-set-mark{width:22px;height:22px;display:block;flex:none;filter:brightness(0)}
 
-/* 首页左上角的小图标 */
-.wb-brand{display:inline-flex;align-items:center;flex:none}
+/* 首页左上角的小图标 + 技能更新提示 */
+.wb-brand{display:inline-flex;align-items:center;gap:10px;flex:none}
 .wb-brand img{width:30px;height:30px;display:block;filter:brightness(0)}
+.wb-skill-warn{font-size:calc(11.5px * var(--wb-scale));line-height:1.4;color:var(--wb-coral-2);background:#FFF3EC;border:1px solid #FFD9C6;border-radius:999px;padding:4px 10px;cursor:pointer}
+.wb-skill-warn:hover{background:#FFE8DA}
 .wb-set-close{width:32px;height:32px;border-radius:50%;color:var(--wb-ink-soft);background:#FAF7FF;border:1px solid var(--wb-line-strong);display:grid;place-items:center}
 .wb-set-close:hover{background:#F3EDFF;color:var(--wb-ink)}
 .wb-set-close svg{display:block}
@@ -439,6 +458,7 @@ window.__ModuleLoader__.load({
       showAddWord: false,
       skillInstalled: false,
       newSessionFullAccess: true,
+      showMastered: false,
       fontWord: DEFAULT_WORD_FONT,
       fontPhrase: DEFAULT_PHRASE_FONT
     };
@@ -454,6 +474,7 @@ window.__ModuleLoader__.load({
           if (raw.order === 'asc' || raw.order === 'desc') out.order = raw.order;
           out.fontWord = pickFont(raw.fontWord, DEFAULT_WORD_FONT);
           out.fontPhrase = pickFont(raw.fontPhrase, DEFAULT_PHRASE_FONT);
+          if (typeof raw.showMastered === 'boolean') out.showMastered = raw.showMastered;
         }
       } catch (e) {}
       return out;
@@ -486,18 +507,66 @@ window.__ModuleLoader__.load({
       return HOST_BASE + '/file?name=' + encodeURIComponent(text)
     }
 
+    /* 一个词条可以有多套词性/释义（senses），也可以只有旧的单套 pos/zh/en/sentence */
+    function normSentence(s) {
+      if (!s || typeof s !== 'object') return null
+      const en = String(s.en || '').trim()
+      if (!en) return null
+      return { en: en, zh: s.zh || '', audio: assetUrl('audio', s.audio) }
+    }
+
+    function normSenses(w) {
+      const out = []
+      if (Array.isArray(w.senses)) {
+        w.senses.forEach(function (sn) {
+          if (!sn || typeof sn !== 'object') return
+          const pos = String(sn.pos || '').trim()
+          const zh = String(sn.zh || '').trim()
+          const en = String(sn.en || '').trim()
+          const sentence = normSentence(sn.sentence)
+          if (!pos && !zh && !en && !sentence) return
+          out.push({ pos: pos, zh: zh, en: en, sentence: sentence })
+        })
+      }
+      if (out.length) return out
+      return [{ pos: w.pos || '', zh: w.zh || '', en: w.en || '', sentence: normSentence(w.sentence) }]
+    }
+
+    function normSentences(w, senses) {
+      const list = []
+      if (Array.isArray(w.senses) && senses.length) {
+        senses.forEach(function (sn) { if (sn.sentence) list.push(sn.sentence) })
+      }
+      if (!list.length && Array.isArray(w.sentences)) {
+        w.sentences.forEach(function (item) {
+          const one = normSentence(item)
+          if (one) list.push(one)
+        })
+      }
+      if (!list.length && w.sentence) {
+        const one = normSentence(w.sentence)
+        if (one) list.push(one)
+      }
+      return list
+    }
+
     function applyDiskWords(list) {
       /* 空词库也要接受：切到一个空目录时必须把旧卡片清掉 */
       if (!Array.isArray(list)) return false
       const out = list.map(function (w) {
+        const senses = normSenses(w)
+        const primary = senses[0] || { pos: '', zh: '', en: '' }
+        const sentences = normSentences(w, senses)
         return {
           slug: w.slug,
           word: w.word,
           created: w.created || '',
           ipa: w.ipa || '',
-          pos: w.pos || '',
-          zh: w.zh || '',
-          en: w.en || '',
+          pos: w.pos || primary.pos,
+          zh: w.zh || primary.zh,
+          en: w.en || primary.en,
+          senses: senses,
+          sentences: sentences,
           art: assetUrl('art', w.art),            // 默认插图资源路径
           customArt: assetUrl('art', w.customArt), // 自定义插图资源路径（空串表示没有）
           artAlt: w.artAlt || w.word,
@@ -505,9 +574,7 @@ window.__ModuleLoader__.load({
           phrases: (w.phrases || []).map(function (p) {
             return { en: p.en, zh: p.zh, audio: assetUrl('audio', p.audio) }
           }),
-          sentence: w.sentence
-            ? { en: w.sentence.en, zh: w.sentence.zh || '', audio: assetUrl('audio', w.sentence.audio) }
-            : null
+          sentence: sentences[0] || null
         }
       })
       out.sort(function (a, b) { return createdMs(a) - createdMs(b) })
@@ -528,6 +595,8 @@ window.__ModuleLoader__.load({
       if (typeof state.rootDir === 'string' && state.rootDir) STORE.settings.rootDir = state.rootDir;
       STORE.settings.fontWord = pickFont(STORE.settings.fontWord, DEFAULT_WORD_FONT);
       STORE.settings.fontPhrase = pickFont(STORE.settings.fontPhrase, DEFAULT_PHRASE_FONT);
+      STORE.settings.showMastered = STORE.settings.showMastered === true;
+      STORE.skillStale = state.skillStale === true;
     }
 
     let saveTimer = null;
@@ -543,7 +612,17 @@ window.__ModuleLoader__.load({
           settings: STORE.settings,
           tagList: STORE.tagList,
           tags: STORE.tags,
-        }).then(function (res) { if (res && res.state) applyHostState(res.state, false); });
+        }).then(function (res) {
+          if (!res || !res.state) return;
+          applyHostState(res.state, false);
+          const next = res.state.settings || {};
+          ['rootDirLabel', 'workDirLabel', 'rootDir', 'workDir'].forEach(function (key) {
+            if (typeof next[key] === 'string' && next[key]) STORE.settings[key] = next[key];
+          });
+          if (typeof next.rootDirExists === 'boolean') STORE.settings.rootDirExists = next.rootDirExists;
+          if (typeof next.workDirExists === 'boolean') STORE.settings.workDirExists = next.workDirExists;
+          emit();
+        });
       }, 260);
     }
 
@@ -554,6 +633,7 @@ window.__ModuleLoader__.load({
         const state = res.state || {}
         applyHostState(state)
         applyDiskWords(res.words)
+        STORE.skillStale = res.skillStale === true
         hostReady = true
         STORE.hostLoaded = true
         emit()
@@ -577,6 +657,7 @@ window.__ModuleLoader__.load({
           || Object.keys(legacyTags).length > 0;
         applyHostState(state);
         applyDiskWords(res.words);
+        STORE.skillStale = res.skillStale === true;
         hostReady = true;
         if (diskEmpty && hasLegacy) {
           STORE.settings = Object.assign({}, STORE.settings, {
@@ -661,7 +742,9 @@ window.__ModuleLoader__.load({
       menu: null,              // 右键菜单 { slug, x, y }
       notice: '',              // 面板底部的一句轻提示
       notesState: '',          // 「一键安装随记」的提示
+      skillStale: false,       // 已安装技能与当前版本不一致
       lastView: '',
+      homeScroll: 0,           // 首页的滚动位置，进出单词页时保留
       listeners: new Set()
     };
     let pending = null;   // 自动翻题的延时句柄
@@ -785,6 +868,18 @@ window.__ModuleLoader__.load({
         'aria-hidden': true
       },
         h('path', { d: 'M6 6l12 12M18 6L6 18' })
+      );
+    }
+
+    function ArrowUpIcon(props) {
+      const size = (props && typeof props.size === 'number') ? props.size : 16;
+      return h('svg', {
+        width: size, height: size, viewBox: '0 0 24 24', fill: 'none',
+        stroke: 'currentColor', strokeWidth: 1.8, strokeLinecap: 'round', strokeLinejoin: 'round',
+        'aria-hidden': true
+      },
+        h('path', { d: 'M12 19V5' }),
+        h('path', { d: 'M6 11l6-6 6 6' })
       );
     }
 
@@ -1185,21 +1280,27 @@ window.__ModuleLoader__.load({
     function makeRecognition(word, type) {
       const others = shuffle(WORDS.filter(function (w) { return w.slug !== word.slug; }));
       const opts = [];
+      let correctZh = '';
 
       if (type.a === 'art' || type.a === 'audio') {
         /* 图片 / 声音只能从词库里取 */
         opts.push({ entry: word, correct: true });
         others.slice(0, 3).forEach(function (w) { opts.push({ entry: w, correct: false }); });
       } else if (type.a === 'zh') {
-        opts.push({ value: word.zh, correct: true });
-        others.slice(0, 2).forEach(function (w) { opts.push({ value: w.zh, correct: false }); });
-        const near = shuffle(ZH_NEAR[word.slug] || []).filter(function (s) {
-          return s !== word.zh;
+        correctZh = zhRandomOf(word) || word.zh;
+        opts.push({ value: correctZh, correct: true });
+        others.slice(0, 2).forEach(function (w) {
+          const v = zhRandomOf(w) || w.zh;
+          if (v) opts.push({ value: v, correct: false });
+        });
+        const near = shuffle(ZH_NEAR[word.slug] || []).filter(function (v) {
+          return v !== correctZh;
         })[0];
         if (near) opts.push({ value: near, correct: false, near: true });
         else {
-          const alt = others.filter(function (w) { return w.zh && w.zh !== word.zh; })[0];
-          if (alt) opts.push({ value: alt.zh, correct: false });
+          const alt = others.map(function (w) { return zhRandomOf(w) || w.zh; })
+            .filter(function (v) { return v && v !== correctZh; })[0];
+          if (alt) opts.push({ value: alt, correct: false });
         }
       } else {
         /* 选单词：三个干扰项都是**真实存在的英语单词**（词库内或词库外都行），只是长得像 */
@@ -1221,7 +1322,7 @@ window.__ModuleLoader__.load({
       if (dedup.length < 4) {
         others.forEach(function (w) {
           if (dedup.length >= 4) return;
-          const k = type.a === 'word' ? w.word : w.zh;
+          const k = type.a === 'word' ? w.word : (zhRandomOf(w) || w.zh);
           const key = 'v:' + k;
           if (seen[key]) return;
           seen[key] = 1;
@@ -1229,7 +1330,7 @@ window.__ModuleLoader__.load({
         });
       }
 
-      return { word: word, p: type.p, a: type.a, options: shuffle(dedup.slice(0, 4)) };
+      return { word: word, p: type.p, a: type.a, zh: correctZh, options: shuffle(dedup.slice(0, 4)) };
     }
 
     /* 整套题都围绕「当前这个词」：12 种题型先各来一次，再随机补到 20 题，
@@ -1305,7 +1406,25 @@ window.__ModuleLoader__.load({
     function closeSettings() { STORE.settingsOpen = false; emit(); }
 
     /* ============================== 标签动作 ============================== */
+    const BUILTIN_TAG = '已掌握';
+
     function tagsOf(slug) { return STORE.tags[slug] || []; }
+
+    /* 一个词所有中文释义（去重，保持顺序） */
+    function zhListOf(word) {
+      const list = ((word && word.senses && word.senses.length) ? word.senses : [{ zh: word && word.zh }])
+        .map(function (sn) { return String((sn && sn.zh) || '').trim(); })
+        .filter(Boolean);
+      const uniq = [];
+      list.forEach(function (t) { if (uniq.indexOf(t) < 0) uniq.push(t); });
+      return uniq;
+    }
+    function zhAllOf(word) { return zhListOf(word).join('；'); }
+    function zhRandomOf(word) {
+      const list = zhListOf(word);
+      if (!list.length) return '';
+      return list[Math.floor(Math.random() * list.length)];
+    }
 
     function toggleWordTag(slug, tag) {
       const cur = tagsOf(slug);
@@ -1421,6 +1540,8 @@ window.__ModuleLoader__.load({
         if (res && res.ok) {
           patchSettings({ skillInstalled: true });
           applyHostResult(res, false);
+          STORE.skillStale = false;
+          emit();
         }
       });
     }
@@ -1528,16 +1649,17 @@ window.__ModuleLoader__.load({
       }, 700)
     }
     function submitAddWords() {
-      const words = String(addWordDraft || '')
-        .split(/[,，\s]+/)
-        .map(function (w) { return w.trim().toLowerCase(); })
-        .filter(function (w) { return /^[a-z][a-z'-]*$/.test(w); });
-      if (!words.length) return;
+      const text = String(addWordDraft || '').trim();
+      if (!text) {
+        STORE.addWordState = '先写点要加的内容';
+        emit();
+        return;
+      }
       STORE.addWordState = '正在新建会话…';
       emit();
-      hostOp('add-words', { words: words }).then(function (res) {
+      hostOp('add-words', { text: text }).then(function (res) {
         if (res && res.ok) {
-          STORE.addWordState = '已新建会话，正在让技能制作 ' + words.length + ' 张单词卡';
+          STORE.addWordState = '已新建会话，交给技能处理';
           addWordDraft = '';
           STORE.addWordPop = null;
           openCreatedSession(res);
@@ -1575,6 +1697,20 @@ window.__ModuleLoader__.load({
     /* ---------- 单词详情设置弹窗 ---------- */
     function openWordSettings(slug) { STORE.wordSettings = { slug: slug }; emit(); }
     function closeWordSettings() { STORE.wordSettings = null; emit(); }
+    function deleteWord(slug) {
+      hostOp('delete-word', { slug: slug }).then(function (res) {
+        if (res && res.ok) {
+          if (res.words) applyDiskWords(res.words);
+          if (res.tags && typeof res.tags === 'object') STORE.tags = Object.assign(Object.create(null), res.tags);
+          STORE.wordSettings = null;
+          if (STORE.slug === slug) STORE.slug = null;
+          showNotice('已删除「' + slug + '」');
+        } else {
+          showNotice((res && res.error) || '删除失败');
+        }
+        emit();
+      });
+    }
     function openTagMenu(slug, x, y) {
       STORE.menu = { slug: slug, x: Number(x) || 0, y: Number(y) || 0 };
       emit();
@@ -1619,10 +1755,14 @@ window.__ModuleLoader__.load({
       });
     }
 
-    /* 首页可见的单词：没有筛选就是全部，否则是「命中任意一个选中标签」的词 */
+    /* 首页可见的单词：先按「已掌握」开关过滤，再按选中的标签筛 */
     function visibleWords() {
-      if (!STORE.filters.length) return WORDS;
-      return WORDS.filter(function (w) {
+      const base = WORDS.filter(function (w) {
+        if (!STORE.settings.showMastered && tagsOf(w.slug).indexOf(BUILTIN_TAG) >= 0) return false;
+        return true;
+      });
+      if (!STORE.filters.length) return base;
+      return base.filter(function (w) {
         const t = tagsOf(w.slug);
         return STORE.filters.some(function (f) { return t.indexOf(f) >= 0; });
       });
@@ -1648,17 +1788,24 @@ window.__ModuleLoader__.load({
         ),
         h('span', { className: 'wb-meta' },
           h('b', null, w.word),
-          h('span', null, w.zh)
+          h('span', null, zhAllOf(w))
         ),
         tagsOf(w.slug).length ? h('span', { className: 'wb-tags' },
-          tagsOf(w.slug).map(function (t) { return h('span', { className: 'wb-tag', key: t }, t); })
+          tagsOf(w.slug).map(function (t) {
+            return h('span', { className: 'wb-tag' + (t === BUILTIN_TAG ? ' wb-tag--mastered' : ''), key: t },
+              t === BUILTIN_TAG ? h('span', { className: 'wb-tag-dot', 'aria-hidden': true }) : null,
+              t
+            );
+          })
         ) : null
       );
     }
 
-    /* 顶部的标签筛选（多选，命中任意一个即显示） */
+    /* 顶部的标签筛选（多选，命中任意一个即显示）+ 右侧的固有标签开关 */
     function TagFilters() {
-      if (!STORE.tagList.length) return null;
+      const masteredCount = WORDS.filter(function (w) {
+        return tagsOf(w.slug).indexOf(BUILTIN_TAG) >= 0;
+      }).length;
       return h('div', { className: 'wb-filters', role: 'group', 'aria-label': '按标签筛选' },
         STORE.tagList.map(function (t) {
           const active = STORE.filters.indexOf(t) >= 0;
@@ -1676,7 +1823,18 @@ window.__ModuleLoader__.load({
           type: 'button',
           className: 'wb-chip wb-chip--clear',
           onClick: clearFilters
-        }, '清除筛选') : null
+        }, '清除筛选') : null,
+        h('button', {
+          type: 'button',
+          className: 'wb-chip wb-chip--mastered',
+          'aria-pressed': STORE.settings.showMastered ? 'true' : 'false',
+          title: STORE.settings.showMastered ? '隐藏已掌握的单词' : '显示已掌握的单词',
+          onClick: function () { patchSettings({ showMastered: !STORE.settings.showMastered }); }
+        },
+          h('span', { className: 'wb-chip-dot', 'aria-hidden': true }),
+          BUILTIN_TAG,
+          h('span', { className: 'wb-chip-n' }, String(masteredCount))
+        )
       );
     }
 
@@ -1774,7 +1932,7 @@ window.__ModuleLoader__.load({
                   alt: '随记单词本 logo'
                 })
               ),
-              h('span', { className: 'wb-settings-ver' }, '随记单词本 · v1.0.1')
+              h('span', { className: 'wb-settings-ver' }, '随记单词本 · v1.1.0')
             )
           ),
 
@@ -1930,6 +2088,7 @@ window.__ModuleLoader__.load({
               h('code', { className: 'wb-path' }, String(s.workDirLabel || s.workDir || DEFAULT_WORKDIR_LABEL)),
               h('div', { className: 'wb-set-row' },
                 h('button', { type: 'button', className: 'wb-mini', onClick: function () { pickFolder('workDir'); } }, '选择文件夹…'),
+                h('button', { type: 'button', className: 'wb-mini', onClick: function () { patchSettings({ workDir: '' }); } }, '恢复默认目录'),
                 h('span', { className: 'wb-set-hint' }, '「+单词」新建的会话都用这个 DSH 工作目录，不存在会自动创建')
               )
             ),
@@ -2053,7 +2212,7 @@ window.__ModuleLoader__.load({
       const vw = (typeof window !== 'undefined' && window.innerWidth) || 1024;
       const vh = (typeof window !== 'undefined' && window.innerHeight) || 768;
       const width = 224;
-      const height = 74 + Math.max(1, STORE.tagList.length) * 38;
+      const height = 74 + (1 + Math.max(1, STORE.tagList.length)) * 38;
       const left = Math.max(8, Math.min(m.x, vw - width - 12));
       const top = Math.max(8, Math.min(m.y, vh - height - 12));
 
@@ -2082,6 +2241,19 @@ window.__ModuleLoader__.load({
             h('b', null, w.word),
             h('span', null, '快捷设置')
           ),
+          h('button', {
+            key: BUILTIN_TAG,
+            type: 'button',
+            role: 'menuitemcheckbox',
+            className: 'wb-menu-item',
+            'aria-checked': cur.indexOf(BUILTIN_TAG) >= 0 ? 'true' : 'false',
+            'aria-label': BUILTIN_TAG,
+            onClick: function () { toggleWordTag(m.slug, BUILTIN_TAG); }
+          },
+            h('span', { className: 'tick' }, cur.indexOf(BUILTIN_TAG) >= 0 ? '✓' : ''),
+            h('span', { className: 'wb-tag-dot', 'aria-hidden': true }),
+            BUILTIN_TAG
+          ),
           STORE.tagList.length
             ? STORE.tagList.map(function (t) {
               const on = cur.indexOf(t) >= 0;
@@ -2098,7 +2270,7 @@ window.__ModuleLoader__.load({
                 t
               );
             })
-            : h('div', { className: 'wb-menu-empty' }, '还没有标签。去右上角「设定」里加几个吧。'),
+            : h('div', { className: 'wb-menu-empty' }, '还没有自定义标签，去右上角「设定」里加几个吧。'),
           h('div', { className: 'wb-menu-sep' }),
           h('button', {
             type: 'button',
@@ -2119,14 +2291,36 @@ window.__ModuleLoader__.load({
     function Learn(props) {
       const e = props.entry;
       const hasPhrases = !!(e.phrases && e.phrases.length);
-      const hasSentence = !!(e.sentence && e.sentence.en);
+      const senses = (e.senses && e.senses.length)
+        ? e.senses
+        : [{ pos: e.pos, zh: e.zh, en: e.en, sentence: e.sentence }];
+      const multi = senses.length > 1;
+      const endefs = senses.map(function (sn) { return sn.en; }).filter(Boolean);
+      const endefText = endefs.join(' · ');
+      const sentBlocks = [];
+      if (multi) {
+        senses.forEach(function (sn) {
+          if (sn.sentence && sn.sentence.en) sentBlocks.push({ pos: sn.pos, sentence: sn.sentence });
+        });
+      }
+      if (!sentBlocks.length) {
+        (e.sentences || []).forEach(function (one) {
+          if (one && one.en) sentBlocks.push({ pos: '', sentence: one });
+        });
+      }
       const heroTags = tagsOf(e.slug);
       return h('section', { className: 'wb-learn' },
         h('div', { className: 'wb-learn-top' },
           /* 单词卡区域右上角的标签（窄屏时变成第一行右对齐） */
           heroTags.length ? h('div', { className: 'wb-hero-tags', 'aria-label': '这个单词的标签' },
             heroTags.slice(0, 4).map(function (t) {
-              return h('span', { className: 'wb-hero-tag', key: t }, t);
+              return h('span', {
+                className: 'wb-hero-tag' + (t === BUILTIN_TAG ? ' wb-hero-tag--mastered' : ''),
+                key: t
+              },
+                t === BUILTIN_TAG ? h('span', { className: 'wb-tag-dot', 'aria-hidden': true }) : null,
+                t
+              );
             }),
             heroTags.length > 4 ? h('span', { className: 'wb-hero-tag wb-hero-tag--more' }, '+' + (heroTags.length - 4)) : null
           ) : null,
@@ -2144,12 +2338,21 @@ window.__ModuleLoader__.load({
             h('div', { className: 'wb-pron' },
               h(Speak, { src: e.wordAudio, title: '听发音' }),
               e.ipa ? h('span', { className: 'wb-ipa' }, e.ipa) : null,
-              (e.ipa && e.en) ? h('span', { className: 'wb-dot', 'aria-hidden': true }, '·') : null,
-              e.en ? h('span', { className: 'wb-endef' }, e.en) : null
+              (e.ipa && endefText) ? h('span', { className: 'wb-dot', 'aria-hidden': true }, '·') : null,
+              endefText ? h('span', { className: 'wb-endef' }, endefText) : null
             ),
-            h('div', { className: 'wb-mean' },
-              e.pos ? h('span', { className: 'wb-pos' }, e.pos) : null,
-              e.zh
+            h('div', { className: 'wb-mean' + (multi ? ' wb-mean--multi' : '') },
+              senses.map(function (sn, i) {
+                return multi
+                  ? h('span', { className: 'wb-sense', key: 'sn' + i },
+                      sn.pos ? h('span', { className: 'wb-pos' }, sn.pos) : null,
+                      sn.zh
+                    )
+                  : h('span', { key: 'sn' + i },
+                      sn.pos ? h('span', { className: 'wb-pos' }, sn.pos) : null,
+                      sn.zh
+                    );
+              })
             )
           ),
           /* 单词卡区域（分隔线以上）的右侧，竖排倍速按钮，垂直居中 */
@@ -2186,21 +2389,28 @@ window.__ModuleLoader__.load({
             })
           )
         ) : null,
-        hasSentence ? h('div', { className: 'wb-section' },
+        sentBlocks.length ? h('div', { className: 'wb-section' },
           h('h2', null, '例句'),
-          h('div', {
-            className: 'wb-sent',
-            role: 'button',
-            tabIndex: 0,
-            onClick: function () { play(e.sentence.audio); },
-            onKeyDown: function (ev) {
-              if (ev.key === 'Enter' || ev.key === ' ') { ev.preventDefault(); play(e.sentence.audio); }
-            }
-          },
-            h(Speak, { src: e.sentence.audio, small: true, tone: 'amber', title: '听例句' }),
-            h('span', { className: 'en' }, e.sentence.en),
-            h('span', { className: 'zh' }, e.sentence.zh || '')
-          )
+          sentBlocks.map(function (block, i) {
+            const one = block.sentence;
+            return h('div', {
+              key: 'sent' + i,
+              className: 'wb-sent',
+              role: 'button',
+              tabIndex: 0,
+              onClick: function () { play(one.audio); },
+              onKeyDown: function (ev) {
+                if (ev.key === 'Enter' || ev.key === ' ') { ev.preventDefault(); play(one.audio); }
+              }
+            },
+              h(Speak, { src: one.audio, small: true, tone: 'amber', title: '听例句' }),
+              h('span', { className: 'en' },
+                block.pos ? h('span', { className: 'wb-pos' }, block.pos) : null,
+                one.en
+              ),
+              h('span', { className: 'zh' }, one.zh || '')
+            );
+          })
         ) : null
       );
     }
@@ -2291,7 +2501,7 @@ window.__ModuleLoader__.load({
         artOf(e) ? h('div', { className: 'wb-test-art' },
           h('img', { src: artOf(e), alt: e.artAlt || e.word, draggable: false })
         ) : null,
-        h('div', { className: 'wb-prompt' }, e.zh),
+        h('div', { className: 'wb-prompt' }, zhAllOf(e)),
         h('div', {
           className: 'wb-letters',
           tabIndex: 0,
@@ -2299,7 +2509,7 @@ window.__ModuleLoader__.load({
           onKeyDown: onKey,
           onMouseDown: function () { if (box.current) box.current.focus(); },
           role: 'application',
-          'aria-label': '拼写输入：' + e.zh
+          'aria-label': '拼写输入：' + zhAllOf(e)
         }, cellNodes),
         h('div', {
           className: 'wb-feedback' + (t.solved ? ' wb-feedback--ok' : t.bad !== null ? ' wb-feedback--bad' : ''),
@@ -2363,7 +2573,7 @@ window.__ModuleLoader__.load({
 
       function promptNode() {
         if (q.p === 'word') return h('div', { className: 'wb-rec-word' }, t.word);
-        if (q.p === 'zh') return h('div', { className: 'wb-rec-zh' }, t.zh);
+        if (q.p === 'zh') return h('div', { className: 'wb-rec-zh' }, q.zh || t.zh);
         if (q.p === 'art') return h('img', { className: 'wb-rec-art', src: artOf(t), alt: t.artAlt || t.word, draggable: false });
         return h('button', {
           type: 'button',
@@ -2518,6 +2728,8 @@ window.__ModuleLoader__.load({
     /* ============================== 单词设置弹窗 ============================== */
     function WordSettingsDialog() {
       const ws = STORE.wordSettings;
+      const [confirmDelete, setConfirmDelete] = useState(false);
+      useEffect(function () { setConfirmDelete(false); }, [ws && ws.slug]);
       if (!ws) return null;
       const w = findWord(ws.slug);
       if (!w) return null;
@@ -2545,19 +2757,45 @@ window.__ModuleLoader__.load({
           h('div', { className: 'wb-field' },
             h('span', null, '标签'),
             h('div', { className: 'wb-taglist' },
-              STORE.tagList.length
-                ? STORE.tagList.map(function (t) {
-                  const active = on.indexOf(t) >= 0;
-                  return h('button', {
-                    key: t,
-                    type: 'button',
-                    className: 'wb-chip',
-                    'aria-pressed': active ? 'true' : 'false',
-                    onClick: function () { toggleWordTag(w.slug, t); }
-                  }, t);
-                })
-                : h('span', { className: 'wb-tagnone' }, '还没有标签，去「设定」里加几个')
+              [BUILTIN_TAG].concat(STORE.tagList).map(function (t) {
+                const active = on.indexOf(t) >= 0;
+                return h('button', {
+                  key: t,
+                  type: 'button',
+                  className: 'wb-chip' + (t === BUILTIN_TAG ? ' wb-chip--mastered' : ''),
+                  'aria-pressed': active ? 'true' : 'false',
+                  onClick: function () { toggleWordTag(w.slug, t); }
+                },
+                  t === BUILTIN_TAG ? h('span', { className: 'wb-chip-dot', 'aria-hidden': true }) : null,
+                  t
+                );
+              }),
+              !STORE.tagList.length ? h('span', { className: 'wb-tagnone' }, '还没有自定义标签，去「设定」里加几个') : null
             )
+          ),
+          h('div', { className: 'wb-field wb-danger-zone' },
+            h('span', null, '删除单词'),
+            confirmDelete
+              ? h('div', { className: 'wb-set-row' },
+                  h('span', { className: 'wb-set-hint' }, '词条和 words/' + w.slug + '/ 整个目录都会删掉，不能恢复。'),
+                  h('button', {
+                    type: 'button',
+                    className: 'wb-btn wb-btn--sm wb-btn--danger',
+                    onClick: function () { deleteWord(w.slug); }
+                  }, '确认删除'),
+                  h('button', {
+                    type: 'button',
+                    className: 'wb-mini',
+                    onClick: function () { setConfirmDelete(false); }
+                  }, '取消')
+                )
+              : h('div', { className: 'wb-set-row' },
+                  h('button', {
+                    type: 'button',
+                    className: 'wb-mini',
+                    onClick: function () { setConfirmDelete(true); }
+                  }, '删除这个单词…')
+                )
           ),
         )
       );
@@ -2570,15 +2808,18 @@ window.__ModuleLoader__.load({
       const rec = !!st.recognition;
       const viewKey = rec ? 'recognition' : (entry ? (testing ? entry.slug + ':test' : entry.slug) : 'home');
       const scroll = useRef(null);
+      const [showTop, setShowTop] = useState(false);
 
       /* 首次挂载从「单词本根目录」读状态（宿主半边写盘） */
       useEffect(function () { bootHostState(); }, []);
 
-      /* 面板被切走会卸载：重新挂载时保持原来的滚动位置，只在真正换页时回到顶部 */
+      /* 切页时决定滚动位置：回首页恢复离开时的高度，进单词页回到顶部 */
       useEffect(function () {
         if (STORE.lastView !== viewKey) {
           STORE.lastView = viewKey;
-          if (scroll.current) scroll.current.scrollTop = 0;
+          if (scroll.current) {
+            scroll.current.scrollTop = viewKey === 'home' ? (STORE.homeScroll || 0) : 0;
+          }
         }
       }, [viewKey]);
 
@@ -2590,7 +2831,16 @@ window.__ModuleLoader__.load({
         }
       },
         h('style', null, CSS),
-        h('div', { className: 'wb-scroll', ref: scroll },
+        h('div', {
+          className: 'wb-scroll',
+          ref: scroll,
+          onScroll: function (ev) {
+            const el = ev.currentTarget;
+            if (viewKey === 'home') STORE.homeScroll = el.scrollTop;
+            const show = viewKey === 'home' && el.scrollTop > 320;
+            setShowTop(function (prev) { return prev === show ? prev : show; });
+          }
+        },
           h('div', { className: 'wb-wrap' },
             h('div', { className: 'wb-topbar' },
               !entry ? h('div', { className: 'wb-brand' },
@@ -2598,7 +2848,13 @@ window.__ModuleLoader__.load({
                   src: pluginAsset('suiji-wordbook-icon.svg'),
                   alt: '随记单词本',
                   draggable: false
-                })
+                }),
+                (st.skillStale && st.settings.skillInstalled) ? h('button', {
+                  type: 'button',
+                  className: 'wb-skill-warn',
+                  title: '已安装的技能和当前版本不一致，点这里重新安装',
+                  onClick: installSkill
+                }, '技能有更新，点此重装') : null
               ) : null,
               entry ? h('button', {
                 type: 'button',
@@ -2634,7 +2890,7 @@ window.__ModuleLoader__.load({
                 }, h(GearIcon, { size: 17 })) : null,
                 (entry && !testing && !rec) ? h('button', {
                   type: 'button',
-                  className: 'wb-set-ico',
+                  className: 'wb-set-ico wb-set-ico--lg',
                   title: '设置',
                   'aria-label': '设置',
                   onClick: function () { openWordSettings(entry.slug); }
@@ -2669,6 +2925,17 @@ window.__ModuleLoader__.load({
                     : h(Learn, { key: entry.slug, entry: entry })
           )
         ),
+        (!entry && showTop) ? h('button', {
+          type: 'button',
+          className: 'wb-fab',
+          title: '回到顶部',
+          'aria-label': '回到顶部',
+          onClick: function () {
+            STORE.homeScroll = 0;
+            setShowTop(false);
+            if (scroll.current) scroll.current.scrollTo({ top: 0, behavior: 'smooth' });
+          }
+        }, h(ArrowUpIcon, { size: 18 })) : null,
         STORE.settingsOpen ? h(SettingsPanel) : null,
         STORE.notice ? h('div', { className: 'wb-toast', role: 'status', 'aria-live': 'polite' }, STORE.notice) : null,
         STORE.addWordPop ? h(AddWordPopover) : null,

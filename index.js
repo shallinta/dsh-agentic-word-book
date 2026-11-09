@@ -9,7 +9,7 @@
  *   words.json       词条（art = 默认插图路径，customArt = 自定义插图路径）
  *   words/<slug>/    单个单词的全部资源：默认插图、custom-*.xxx 自定义插图、各段发音
  */
-import { existsSync, mkdirSync, readdirSync, readFileSync, statSync, writeFileSync, copyFileSync, rmSync } from 'node:fs'
+import { existsSync, mkdirSync, readdirSync, readFileSync, statSync, writeFileSync, copyFileSync, rmSync, renameSync } from 'node:fs'
 import { spawn } from 'node:child_process'
 import { renderSkill, renderAddWord } from './skill-template.js'
 import { homedir } from 'node:os'
@@ -166,6 +166,36 @@ function ensureFirstRunRoot() {
     if (existsSync(p.settings) || existsSync(p.meta) || existsSync(p.words)) return
     mkdirSync(dir, { recursive: true })
     writeRootPointer(dir)
+  } catch {}
+}
+
+/* 旧版技能把新词卡画好的插图存成了 custom-<slug>.<ext>，
+   这里并回默认插图：覆盖占位图、清空 customArt。只处理文件名恰好是 custom-<slug> 的，
+   用户从「替换插图…」传上来的 custom-<时间戳> 不动。每个根目录只跑一次。 */
+function migrateArt(rootDir) {
+  try {
+    const p = paths(rootDir)
+    const list = readJson(p.words, [])
+    let changed = false
+    for (const w of list) {
+      const m = /^words\/([^/]+)\/custom-([^/]+?)\.(svg|png|jpe?g|webp|gif)$/i.exec(String(w.customArt || ''))
+      if (!m || m[1] !== w.slug || m[2] !== w.slug) continue
+      const ext = m[3].toLowerCase()
+      const dir = path.join(rootDir, 'words', w.slug)
+      const from = path.join(rootDir, w.customArt)
+      if (!existsSync(from)) continue
+      const target = path.join(dir, w.slug + '.' + ext)
+      try {
+        if (path.resolve(from) !== path.resolve(target)) {
+          try { rmSync(target, { force: true }) } catch {}
+          renameSync(from, target)
+        }
+        w.art = 'words/' + w.slug + '/' + w.slug + '.' + ext
+        w.customArt = ''
+        changed = true
+      } catch {}
+    }
+    if (changed) writeJson(p.words, list)
   } catch {}
 }
 
@@ -332,6 +362,29 @@ function installSkill(rootDir) {
   return { dir, scripts: copied }
 }
 
+/* 已安装的技能和当前版本的模板/脚本是否一致 */
+function skillOutdated(rootDir) {
+  try {
+    const dir = skillDir()
+    const skillFile = path.join(dir, 'SKILL.md')
+    if (!existsSync(skillFile)) return false
+    if (readFileSync(skillFile, 'utf8') !== renderSkill(rootDir)) return true
+    const addFile = path.join(dir, 'add-word.md')
+    if (!existsSync(addFile) || readFileSync(addFile, 'utf8') !== renderAddWord(rootDir)) return true
+    if (existsSync(SCRIPTS_DIR)) {
+      for (const name of readdirSync(SCRIPTS_DIR)) {
+        const from = path.join(SCRIPTS_DIR, name)
+        if (!statSync(from).isFile()) continue
+        const to = path.join(dir, 'scripts', name)
+        if (!existsSync(to) || !readFileSync(to).equals(readFileSync(from))) return true
+      }
+    }
+    return false
+  } catch {
+    return false
+  }
+}
+
 /* ---------------- 主入口 ---------------- */
 
 export function apply(rootCtx) {
@@ -368,6 +421,9 @@ export function apply(rootCtx) {
   const currentRoot = () => loadState(bootRoot()).rootDir
   const stateOf = () => loadState(bootRoot())
 
+  /* 老数据迁移：把技能生成的 custom-<slug> 插图并回默认插图 */
+  migrateArt(bootRoot())
+
   const disposers = []
 
   disposers.push(webServer.register({
@@ -380,7 +436,8 @@ export function apply(rootCtx) {
         const words = readJson(paths(state.rootDir).words, [])
         sendJson(res, 200, { ok: true, state, words: Array.isArray(words) ? words : [],
           rootPointer: rootPointerPath(),
-          defaultRoot: DEFAULT_SETTINGS.rootDir, skillDir: skillDir() })
+          defaultRoot: DEFAULT_SETTINGS.rootDir, skillDir: skillDir(),
+          skillStale: skillOutdated(state.rootDir) })
       } catch (err) {
         sendJson(res, 200, { ok: false, error: String(err?.message ?? err) })
       }
@@ -419,6 +476,7 @@ export function apply(rootCtx) {
           mkdirSync(target, { recursive: true })
           const next = saveState(target, { settings: Object.assign({}, state.settings, { rootDir: target }) })
           writeRootPointer(next.rootDir)
+          migrateArt(next.rootDir)
           return sendJson(res, 200, {
             ok: true,
             migrated: Boolean(occupied && args.migrate),
@@ -528,11 +586,31 @@ export function apply(rootCtx) {
           })
         }
 
+        if (op === 'delete-word') {
+          const slug = String(args.slug || '').trim().toLowerCase()
+          if (!/^[a-z][a-z'-]*$/.test(slug)) return sendJson(res, 200, { ok: false, error: 'bad slug' })
+          const p = paths(state.rootDir)
+          const list = readJson(p.words, [])
+          if (!list.some((w) => w.slug === slug)) return sendJson(res, 200, { ok: false, error: 'unknown word' })
+          const next = list.filter((w) => w.slug !== slug)
+          writeJson(p.words, next)
+          /* 标签里也去掉这个词 */
+          const meta = readJson(p.meta, { tagList: [], tags: {} })
+          if (meta.tags && typeof meta.tags === 'object' && meta.tags[slug]) {
+            delete meta.tags[slug]
+            writeJson(p.meta, { tagList: meta.tagList || [], tags: meta.tags })
+          }
+          try { rmSync(path.join(state.rootDir, 'words', slug), { recursive: true, force: true }) } catch {}
+          return sendJson(res, 200, { ok: true, words: next, tags: (meta.tags && typeof meta.tags === 'object') ? meta.tags : {} })
+        }
+
         if (op === 'add-words') {
-          const words = (Array.isArray(args.words) ? args.words : [])
-            .map((w) => String(w || '').trim().toLowerCase())
-            .filter((w) => /^[a-z][a-z'-]*$/.test(w))
-          if (!words.length) return sendJson(res, 200, { ok: false, error: 'no valid words' })
+          const rawText = String(args.text || '').trim()
+          const legacyWords = (Array.isArray(args.words) ? args.words : [])
+            .map((w) => String(w || '').trim())
+            .filter(Boolean)
+          const input = rawText || legacyWords.join('、')
+          if (!input) return sendJson(res, 200, { ok: false, error: 'empty input' })
           const controller = ctx.get('sessionController')
           if (!controller || typeof controller.create !== 'function') {
             return sendJson(res, 200, { ok: false, error: 'session controller unavailable' })
@@ -541,8 +619,8 @@ export function apply(rootCtx) {
           const signal = new AbortController().signal
           const ws = await ensureWorkspace(ctx, state.settings, workDir)
           const created = await controller.create(ws ? { workspaceId: ws.id } : { cwd: workDir })
-          const message = '请使用 /suiji-word-book 技能，为单词本新增这些单词卡：' + words.join('、') +
-            '。单词本根目录是 ' + state.rootDir + '。每张卡要有音标、词性、中文释义、英文释义、5 条词组、1 条例句和一张 320x240 插图，并生成发音。'
+          const message = '请使用 /suiji-word-book 技能，为单词本新增单词卡。用户输入：' + input +
+            '。单词本根目录是 ' + state.rootDir + '。每张卡要有音标、词性、中文释义、英文释义、5 条词组、例句和一张 320x240 插图，并生成发音。'
           /* 新会话默认工作在 workspace-write，写 words.json / 音频会被逐次审批；
              这里直接切到完全权限（可用 settings.newSessionFullAccess=false 关掉） */
           let presetApplied = ''
@@ -570,7 +648,7 @@ export function apply(rootCtx) {
               content: [{ type: 'text', text: message }],
             }, signal)
           }
-          return sendJson(res, 200, { ok: true, sessionId: created.sessionId, workspaceId: ws ? String(ws.id) : '', workDir, presetApplied, words })
+          return sendJson(res, 200, { ok: true, sessionId: created.sessionId, workspaceId: ws ? String(ws.id) : '', workDir, presetApplied, input })
         }
         return sendJson(res, 200, { ok: false, error: 'unknown op: ' + op })
       } catch (err) {

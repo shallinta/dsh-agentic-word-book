@@ -8,8 +8,11 @@
  * 说明：
  *   - 只依赖 Node 内置模块，macOS / Windows / Linux 通用。
  *   - slug 取单词小写，必须匹配 /^[a-z][a-z'-]*$/，也是资源目录名。
- *   - 生成 words/<slug>/<slug>.svg（320×240 扁平风占位图），
+ *   - 生成 words/<slug>/<slug>.svg（320×240 扁平风占位图，临时用），
  *     并向 words.json 追加占位词条（字段与插件一致）。
+ *   - 真正的插图要在 add-word.md 第 3 步画好后替换默认插图：
+ *     覆盖 words/<slug>/<slug>.svg，或存成 words/<slug>/<slug>.<ext> 并改 art；
+ *     新词卡的 customArt 始终保持空串。
  *   - slug 已存在（目录或词条）时，没有 --force 会拒绝执行；
  *     带 --force 会重画占位图，并只补空缺字段，不覆盖已填写的内容。
  *   - words.json 解析失败时报错退出，绝不覆盖原文件；写入保持 2 空格缩进、
@@ -270,7 +273,8 @@ function main() {
   console.log(`   占位插图：words/${slug}/${slug}.svg（320×240，${svgExists ? '已写入' : '写入校验失败'}）`)
   console.log(`   词条位置：words.json 第 ${index + 1} 条${action === '更新' ? '（已填写的内容保持不变）' : ''}`)
   console.log(`   下一步：填 ipa / pos / zh / en / artAlt / 5 条 phrases / sentence，`)
-  console.log(`           再运行 scripts/make-audio.mjs 生成 7 段发音。`)
+  console.log(`           再画真正的插图替换占位图（覆盖 words/${slug}/${slug}.svg，或改 art 指向新文件），`)
+  console.log(`           然后运行 scripts/make-audio.mjs 生成发音。`)
   if (!svgExists) fail(`占位插图写入失败：${svgFile}`)
 }
 
