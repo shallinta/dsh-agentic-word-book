@@ -59,6 +59,7 @@ ${rootDir}
 ## 常见操作
 
 - **改标题/副标题/分组**：改 \`settings.json\`，不要动 \`rootDir\` / \`workDir\`；标题和副标题的对齐分别用 \`titleAlign\` / \`subtitleAlign\`，取值 \`left\` / \`center\` / \`right\`；颜色用 \`titleColor\` / \`subtitleColor\`，写 \`#rrggbb\`
+- **换主题**：改 \`settings.json\` 的 \`theme\`，取 \`auto\`（跟随系统，默认）、\`morning\`（晨光）、\`midnight\`（子夜）或 \`dust\`（雨滴，毛玻璃）
 - **新建会话**：DSH 工作目录用 \`workDir\`（默认 \`~/Documents/deepseek-harness/suiji-ai/\`），不存在就创建；工作空间名用 \`workTitle\`（默认「随记」）
 - **打标签**：先把新标签加进 \`meta.json\` 的 \`tagList\`，再写进 \`tags[slug]\`
 - **换插图**：用户明确要给某张已有词卡换图时才用。图片放进 \`words/<slug>/\`，文件名以 \`custom-\` 开头（**不要覆盖 \`art\` 指向的默认图**），再把相对路径写进该词条的 \`customArt\`

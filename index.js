@@ -63,6 +63,7 @@ const DEFAULT_SETTINGS = {
   subtitleAlign: 'center',  // 副标题对齐
   titleColor: '#3a3550',    // 首页标题颜色
   subtitleColor: '#615c7a', // 副标题颜色
+  theme: 'auto',             // 主题：auto（跟随系统）/ morning（晨光）/ midnight（子夜）
   backgroundImage: '',      // 首页背景图（相对根目录）
   backgroundOpacity: 0.42,  // 背景图透明度 0~1
 }
