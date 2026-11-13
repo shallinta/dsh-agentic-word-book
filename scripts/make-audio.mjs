@@ -8,7 +8,7 @@
  *
  * 说明：
  *   - 只依赖 Node 内置模块，以及各平台自带的语音合成工具，按系统自动选择：
- *       macOS  ：say + afconvert，输出 11025 Hz 单声道 WAV；默认声音 Samantha。
+ *       macOS  ：say + afconvert，输出 11025 Hz 单声道 WAV；默认用系统声音，可用 --voice 指定。
  *       Windows：powershell + System.Speech，SpeechAudioFormatInfo(11025, 16bit, Mono)。
  *       Linux  ：espeak-ng，输出采样率不保证 11025 Hz，生成后会提示自行确认。
  *   - 每个词条先生成 word.wav、p1.wav–p5.wav，放在 words/<slug>/ 下，
@@ -183,13 +183,15 @@ function sayOnce(text, voice, aiff) {
 }
 
 function synthMac(text, outWav, voice) {
+  /* macOS 的 say 没有音量参数，输出电平就是系统默认（100%），
+     这里不做额外增益，也不做负增益。 */
   const aiff = tmpPath('.aiff')
   try {
     const voices = availableMacVoices()
     const requested = String(voice || '').trim()
     /* 候选顺序：用户指定 → Samantha → 不指定（系统默认）；列表为空时不做过滤 */
     const candidates = []
-    for (const candidate of requested ? [requested, MAC_DEFAULT_VOICE, ''] : [MAC_DEFAULT_VOICE, '']) {
+    for (const candidate of requested ? [requested, MAC_DEFAULT_VOICE, ''] : ['']) {
       if (candidates.includes(candidate)) continue
       if (candidate && voices.size && !voices.has(candidate)) continue
       candidates.push(candidate)
@@ -240,6 +242,7 @@ function synthWindows(text, outWav, voice) {
     return `$ErrorActionPreference = 'Stop'
 Add-Type -AssemblyName System.Speech
 $synth = New-Object System.Speech.Synthesis.SpeechSynthesizer
+$synth.Volume = 100
 ${select}$format = New-Object System.Speech.AudioFormat.SpeechAudioFormatInfo(11025, [System.Speech.AudioFormat.AudioBitsPerSample]::Sixteen, [System.Speech.AudioFormat.AudioChannel]::Mono)
 $synth.SetOutputToWaveFile(${shellQuote(outWav)}, $format)
 $synth.Speak(${shellQuote(text)})
@@ -294,7 +297,7 @@ $synth.Dispose()
 function synthLinux(text, outWav, voice) {
   const res = spawnSync(
     'espeak-ng',
-    ['-w', outWav, '-s', '140', '-v', 'en-us', text],
+    ['-w', outWav, '-s', '140', '-v', 'en-us', '-a', '100', text],
     { encoding: 'utf8' }
   )
   if (res.error) {
@@ -447,7 +450,7 @@ function processEntry(entry, root, wordsFile, list, hadBom, voice, index) {
   }
 
   const notes = []
-  let usedVoice = voice || (process.platform === 'darwin' ? MAC_DEFAULT_VOICE : '系统默认')
+  let usedVoice = voice || '系统默认'
   for (const seg of segs) {
     const outWav = path.join(root, seg.rel)
     try {

@@ -66,6 +66,7 @@ const DEFAULT_SETTINGS = {
   theme: 'auto',             // 主题：auto（跟随系统）/ morning（晨光）/ midnight（子夜）
   backgroundImage: '',      // 首页背景图（相对根目录）
   backgroundOpacity: 0.42,  // 背景图透明度 0~1
+  audioVolume: 1,            // 音频播放音量 0.01~1
 }
 
 function sendJson(res, code, value) {

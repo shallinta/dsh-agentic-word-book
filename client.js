@@ -680,11 +680,11 @@ window.__ModuleLoader__.load({
         swatchGlass: true
       }
     };
-    /* 「跟随系统」不是一套固定配色：白天用晨光，黑夜用子夜。
+    /* 「晨昏」不是一套固定配色：白天用晨光，黑夜用子夜。
        方块一半晨光一半子夜，分割线从上边右三分之一连到下方左三分之一。 */
     const AUTO_THEME = {
       id: 'auto',
-      name: '跟随系统',
+      name: '晨昏',
       card: THEMES.morning.card,
       split: THEMES.midnight.card
     };
@@ -731,6 +731,7 @@ window.__ModuleLoader__.load({
       theme: 'auto',               // auto | morning | midnight
       backgroundImage: '',         // 相对根目录的背景图
       backgroundOpacity: 0.42,
+      audioVolume: 1,              // 音频播放音量 0.01~1
       fontWord: DEFAULT_WORD_FONT,
       fontPhrase: DEFAULT_PHRASE_FONT
     };
@@ -859,6 +860,8 @@ window.__ModuleLoader__.load({
       STORE.settings.theme = (STORE.settings.theme === 'auto' || THEMES[STORE.settings.theme]) ? STORE.settings.theme : 'morning';
       STORE.settings.backgroundImage = typeof STORE.settings.backgroundImage === 'string' ? STORE.settings.backgroundImage : '';
       STORE.settings.backgroundOpacity = clamp01(STORE.settings.backgroundOpacity);
+      const av = Number(STORE.settings.audioVolume);
+      STORE.settings.audioVolume = isFinite(av) ? Math.min(1, Math.max(0.01, av)) : 1;
       STORE.skillStale = state.skillStale === true;
     }
 
@@ -1000,6 +1003,11 @@ window.__ModuleLoader__.load({
     const audioCache = new Map();
     /* rate 只作用这一次播放，不落任何全局设置；缓存的是同一个 Audio 对象，
        所以每次都要显式写回 playbackRate（正常播放就是 1） */
+    function audioVolume() {
+      const v = Number(STORE.settings.audioVolume);
+      if (!isFinite(v)) return 1;
+      return Math.min(1, Math.max(0.01, v));
+    }
     function play(src, rate) {
       if (!src) return;
       let a = audioCache.get(src);
@@ -1010,6 +1018,7 @@ window.__ModuleLoader__.load({
       try {
         a.preservesPitch = true;          // 变速不变调（默认就是 true，写明以防万一）
         a.playbackRate = rate || 1;
+        a.volume = audioVolume();
       } catch (e) {}
       try { a.currentTime = 0; } catch (e) {}
       const p = a.play();
@@ -2296,7 +2305,7 @@ window.__ModuleLoader__.load({
                   alt: '随记单词本 logo'
                 })
               ),
-              h('span', { className: 'wb-settings-ver' }, '随记单词本 · v1.2.0')
+              h('span', { className: 'wb-settings-ver' }, '随记单词本 · v1.2.1')
             )
           ),
 
@@ -2317,7 +2326,7 @@ window.__ModuleLoader__.load({
                     type: 'color',
                     value: s.theme === 'auto' ? activeTheme().titleColor : s.titleColor,
                     disabled: s.theme === 'auto',
-                    title: s.theme === 'auto' ? '跟随系统时标题颜色由当前主题决定' : '标题颜色',
+                    title: s.theme === 'auto' ? '晨昏主题下标题颜色由当前明暗决定' : '标题颜色',
                     'aria-label': '标题颜色',
                     onChange: function (ev) { patchSettings({ titleColor: ev.target.value }); }
                   })
@@ -2340,7 +2349,7 @@ window.__ModuleLoader__.load({
                     type: 'color',
                     value: s.theme === 'auto' ? activeTheme().subtitleColor : s.subtitleColor,
                     disabled: s.theme === 'auto',
-                    title: s.theme === 'auto' ? '跟随系统时副标题颜色由当前主题决定' : '副标题颜色',
+                    title: s.theme === 'auto' ? '晨昏主题下副标题颜色由当前明暗决定' : '副标题颜色',
                     'aria-label': '副标题颜色',
                     onChange: function (ev) { patchSettings({ subtitleColor: ev.target.value }); }
                   })
@@ -2394,6 +2403,22 @@ window.__ModuleLoader__.load({
                     h('span', { className: 'wb-theme-name' }, t.name)
                   );
                 })
+              )
+            ),
+            h('div', { className: 'wb-field' },
+              h('span', null, '音频播放音量'),
+              h('div', { className: 'wb-set-row' },
+                h('input', {
+                  type: 'range',
+                  min: 1,
+                  max: 100,
+                  step: 1,
+                  className: 'wb-range',
+                  value: String(Math.round((s.audioVolume == null ? 1 : s.audioVolume) * 100)),
+                  'aria-label': '音频播放音量',
+                  onChange: function (ev) { patchSettings({ audioVolume: Number(ev.target.value) / 100 }); }
+                }),
+                h('span', { className: 'wb-set-hint' }, Math.round((s.audioVolume == null ? 1 : s.audioVolume) * 100) + '%')
               )
             )
           ),
@@ -3283,7 +3308,7 @@ window.__ModuleLoader__.load({
       /* 首次挂载从「单词本根目录」读状态（宿主半边写盘） */
       useEffect(function () { bootHostState(); }, []);
 
-      /* 跟随系统：系统明暗变化时重绘（只有 theme=auto 会变） */
+      /* 晨昏：系统明暗变化时重绘（只有 theme=auto 会变） */
       useEffect(function () {
         if (typeof window === 'undefined' || typeof window.matchMedia !== 'function') return;
         const mq = window.matchMedia('(prefers-color-scheme: dark)');
