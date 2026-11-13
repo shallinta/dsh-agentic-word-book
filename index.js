@@ -67,6 +67,8 @@ const DEFAULT_SETTINGS = {
   backgroundImage: '',      // 首页背景图（相对根目录）
   backgroundOpacity: 0.42,  // 背景图透明度 0~1
   audioVolume: 1,            // 音频播放音量 0.01~1
+  voiceAccent: 'us',         // 新增单词的发音口音：us / uk
+  voiceGender: 'female',     // 新增单词的发音性别：female / male
 }
 
 function sendJson(res, code, value) {

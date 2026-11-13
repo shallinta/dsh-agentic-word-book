@@ -3,8 +3,8 @@
  * 为「随记单词本」生成单词卡的 7 段发音，并把相对路径写回 words.json。
  *
  * 用法：
- *   node scripts/make-audio.mjs --root "<单词本根目录>" --slug <slug> [--voice <声音名>]
- *   node scripts/make-audio.mjs --root "<单词本根目录>" --all [--voice <声音名>]
+ *   node scripts/make-audio.mjs --root "<单词本根目录>" --slug <slug> [--accent us|uk] [--gender female|male] [--voice <英语声音名>]
+ *   node scripts/make-audio.mjs --root "<单词本根目录>" --all [--accent us|uk] [--gender female|male] [--voice <英语声音名>]
  *
  * 说明：
  *   - 只依赖 Node 内置模块，以及各平台自带的语音合成工具，按系统自动选择：
@@ -31,8 +31,8 @@ import process from 'node:process'
 import { spawnSync } from 'node:child_process'
 
 const USAGE =
-  '用法：node scripts/make-audio.mjs --root "<单词本根目录>" (--slug <slug> | --all) [--voice <声音名>]'
-const MAC_DEFAULT_VOICE = 'Samantha'
+  '用法：node scripts/make-audio.mjs --root "<单词本根目录>" (--slug <slug> | --all) [--accent us|uk] [--gender female|male] [--voice <英语声音名>]\n' +
+  '  不传 --accent / --gender 时读取根目录 settings.json 的 voiceAccent / voiceGender，默认 us / female。'
 const SLUG_RE = /^[a-z][a-z'-]*$/
 const NO_ESPEAK_HINT =
   '找不到 espeak-ng。请先安装：Debian/Ubuntu 执行 sudo apt install espeak-ng，' +
@@ -46,7 +46,7 @@ function fail(message) {
 /* ---------- 参数 ---------- */
 
 function parseArgs(argv) {
-  const out = { root: '', slug: '', all: false, voice: '', help: false }
+  const out = { root: '', slug: '', all: false, voice: '', accent: '', gender: '', help: false }
   for (let i = 0; i < argv.length; i++) {
     const arg = argv[i]
     const eq = arg.indexOf('=')
@@ -63,6 +63,8 @@ function parseArgs(argv) {
       case '--slug': out.slug = value(); break
       case '--all': out.all = true; break
       case '--voice': out.voice = value(); break
+      case '--accent': out.accent = value(); break
+      case '--gender': out.gender = value(); break
       case '-h':
       case '--help': out.help = true; break
       default: fail(`未知参数：${arg}\n${USAGE}`)
@@ -91,6 +93,31 @@ function expandEnv(text) {
     })
 }
 
+
+/* ---------- 发音设置 ---------- */
+
+function readJsonSafe(file) {
+  try {
+    return JSON.parse(readFileSync(file, 'utf8').replace(/^\uFEFF/, ''))
+  } catch {
+    return {}
+  }
+}
+
+function resolveVoicePlan(root, args) {
+  const settings = readJsonSafe(path.join(root, 'settings.json'))
+  const accentArg = String(args.accent || '').toLowerCase()
+  if (accentArg && accentArg !== 'us' && accentArg !== 'uk') fail(`--accent 只能是 us 或 uk\n${USAGE}`)
+  const genderArg = String(args.gender || '').toLowerCase()
+  if (genderArg && genderArg !== 'female' && genderArg !== 'male') fail(`--gender 只能是 female 或 male\n${USAGE}`)
+  const accent = accentArg || (settings.voiceAccent === 'uk' ? 'uk' : 'us')
+  const gender = genderArg || (settings.voiceGender === 'male' ? 'male' : 'female')
+  return { accent, gender, explicit: String(args.voice || '').trim() }
+}
+
+function planLabel(plan) {
+  return `${plan.accent === 'uk' ? '英式' : '美式'} · ${plan.gender === 'male' ? '男声' : '女声'}`
+}
 
 /* ---------- words.json ---------- */
 
@@ -129,24 +156,74 @@ function tmpPath(ext) {
 
 const shellQuote = (text) => "'" + String(text).replace(/'/g, "''") + "'"
 
-/* say 在声音名不存在时会静默回退并返回 0，所以先查一次系统声音列表 */
+/* macOS 不提供声音性别，这里用一份常用英语声音名单按口音/性别偏好挑，
+   并排除系统里的整蛊/特效声音。 */
+const MAC_DEFAULT_FALLBACK = 'Samantha'
+const MAC_PREFS = {
+  us: {
+    female: ['Samantha', 'Ava', 'Allison', 'Susan', 'Zoe', 'Kathy', 'Vicki'],
+    male: ['Alex', 'Tom', 'Aaron', 'Fred', 'Albert', 'Ralph']
+  },
+  uk: {
+    female: ['Kate', 'Serena', 'Stephanie', 'Poppy', 'Martha', 'Shelley', 'Sandy'],
+    male: ['Daniel', 'Oliver', 'Arthur', 'Graham', 'Reed', 'Rocko']
+  }
+}
+const MAC_NOVELTY = new Set([
+  'Bad News', 'Bahh', 'Bells', 'Boing', 'Bubbles', 'Cellos', 'Good News', 'Jester',
+  'Organ', 'Superstar', 'Trinoids', 'Whisper', 'Wobble', 'Zarvox', 'Junior',
+  'Grandma', 'Grandpa', 'Eddy', 'Flo'
+])
+
 let macVoiceCache = null
-function availableMacVoices() {
+function macVoices() {
   if (macVoiceCache) return macVoiceCache
-  const names = new Set()
+  const list = []
   const res = spawnSync('say', ['-v', '?'], { encoding: 'utf8' })
   if (!res.error && res.status === 0) {
     for (const line of String(res.stdout || '').split(/\r?\n/)) {
-      const match = line.match(/^(.+?)\s{2,}[a-z]{2}_[A-Z]{2}\s{2,}#/)
+      const match = line.match(/^(.+?)\s{2,}([a-z]{2}_[A-Z]{2})\s{2,}#/)
       if (!match) continue
       const name = match[1].trim()
-      names.add(name)
-      /* 本地化系统里会显示成「Samantha (英语（美国）)」，去掉括号后缀再收一次 */
-      names.add(name.replace(/\s*\([^)]*\)\s*$/, ''))
+      list.push({ name, base: name.replace(/\s*\([^)]*\)\s*$/, ''), locale: match[2] })
     }
   }
-  macVoiceCache = names
-  return names
+  macVoiceCache = list
+  return list
+}
+
+function pickMacVoice(plan) {
+  const all = macVoices()
+  const english = all.filter((v) => /^en_/.test(v.locale))
+  if (!english.length) return { error: '系统里没有可用的英语声音，无法生成发音' }
+
+  const requested = plan.explicit
+  if (requested) {
+    const found = all.find((v) => v.name === requested || v.base === requested)
+    if (!found) return { error: `找不到声音 ${requested}` }
+    if (!/^en_/.test(found.locale)) return { error: `声音 ${requested} 不是英语（${found.locale}），已拒绝使用` }
+    return { voice: found.name, note: '' }
+  }
+
+  const want = plan.accent === 'uk' ? 'en_GB' : 'en_US'
+  const exact = english.filter((v) => v.locale === want)
+  const pool = exact.length ? exact : english
+  const prefs = (MAC_PREFS[plan.accent] || {})[plan.gender] || []
+  for (const name of prefs) {
+    const hit = pool.find((v) => v.base === name || v.name === name)
+    if (hit) {
+      const notes = []
+      if (!exact.length) notes.push(`没有${plan.accent === 'uk' ? '英式' : '美式'}声音，已改用 ${hit.locale}`)
+      return { voice: hit.name, note: notes.join('；') }
+    }
+  }
+
+  const real = pool.filter((v) => !MAC_NOVELTY.has(v.base))
+  const chosen = real[0] || pool[0] || english[0]
+  const notes = []
+  if (!exact.length) notes.push(`没有${plan.accent === 'uk' ? '英式' : '美式'}声音，已改用 ${chosen.locale}`)
+  notes.push('macOS 不提供性别信息，已按口音挑选声音')
+  return { voice: chosen.name, note: notes.join('；') }
 }
 
 function sayOnce(text, voice, aiff) {
@@ -182,34 +259,15 @@ function sayOnce(text, voice, aiff) {
   }
 }
 
-function synthMac(text, outWav, voice) {
+function synthMac(text, outWav, plan) {
   /* macOS 的 say 没有音量参数，输出电平就是系统默认（100%），
      这里不做额外增益，也不做负增益。 */
+  const pick = pickMacVoice(plan)
+  if (pick.error) throw new Error(pick.error)
   const aiff = tmpPath('.aiff')
   try {
-    const voices = availableMacVoices()
-    const requested = String(voice || '').trim()
-    /* 候选顺序：用户指定 → Samantha → 不指定（系统默认）；列表为空时不做过滤 */
-    const candidates = []
-    for (const candidate of requested ? [requested, MAC_DEFAULT_VOICE, ''] : ['']) {
-      if (candidates.includes(candidate)) continue
-      if (candidate && voices.size && !voices.has(candidate)) continue
-      candidates.push(candidate)
-    }
-    if (!candidates.length) candidates.push('')
-    let lastError = ''
-    let usedVoice = ''
-    let ok = false
-    for (const candidate of candidates) {
-      const res = sayOnce(text, candidate, aiff)
-      if (res.ok) {
-        usedVoice = candidate
-        ok = true
-        break
-      }
-      lastError = res.error
-    }
-    if (!ok) throw new Error(`say 合成失败：${lastError}`)
+    const res = sayOnce(text, pick.voice, aiff)
+    if (!res.ok) throw new Error(`say 合成失败：${res.error}`)
     const converted = spawnSync(
       'afconvert',
       ['-f', 'WAVE', '-d', 'LEI16@11025', '-c', '1', aiff, outWav],
@@ -225,34 +283,55 @@ function synthMac(text, outWav, voice) {
     if (converted.status !== 0) {
       throw new Error(`afconvert 转码失败：${(converted.stderr || converted.stdout || '').trim()}`)
     }
-    const note =
-      requested && usedVoice !== requested
-        ? `没有用上声音 ${requested}，已改用${usedVoice ? ` ${usedVoice}` : '系统默认声音'}`
-        : ''
-    return { note, voice: usedVoice || '系统默认' }
+    return { note: pick.note || '', voice: pick.voice }
   } finally {
     rmSync(aiff, { force: true })
   }
 }
 
-function synthWindows(text, outWav, voice) {
+function synthWindows(text, outWav, plan) {
   const psFile = tmpPath('.ps1')
-  const buildScript = (voiceName) => {
-    const select = voiceName ? `  $synth.SelectVoice(${shellQuote(voiceName)})\n` : ''
-    return `$ErrorActionPreference = 'Stop'
+  const accent = plan.accent === 'uk' ? 'en-GB' : 'en-US'
+  const gender = plan.gender === 'male' ? 'Male' : 'Female'
+  const requested = plan.explicit
+  const buildScript = () => `$ErrorActionPreference = 'Stop'
 Add-Type -AssemblyName System.Speech
 $synth = New-Object System.Speech.Synthesis.SpeechSynthesizer
 $synth.Volume = 100
-${select}$format = New-Object System.Speech.AudioFormat.SpeechAudioFormatInfo(11025, [System.Speech.AudioFormat.AudioBitsPerSample]::Sixteen, [System.Speech.AudioFormat.AudioChannel]::Mono)
+$accent = '${accent}'
+$gender = '${gender}'
+$requested = ${shellQuote(requested)}
+$voices = @($synth.GetInstalledVoices() | Where-Object { $_.Enabled })
+$pick = $null
+$note = ''
+if ($requested -ne '') {
+  $pick = $voices | Where-Object { $_.VoiceInfo.Name -eq $requested } | Select-Object -First 1
+  if ($pick -and ($pick.VoiceInfo.Culture.Name -notlike 'en-*')) {
+    $note = "声音 $requested 不是英语，已改用英语声音"
+    $pick = $null
+  } elseif (-not $pick) {
+    $note = "找不到声音 $requested，已改用英语声音"
+  }
+}
+if (-not $pick) {
+  $exact = @($voices | Where-Object { $_.VoiceInfo.Culture.Name -eq $accent })
+  $pick = $exact | Where-Object { $_.VoiceInfo.Gender.ToString() -eq $gender } | Select-Object -First 1
+  if (-not $pick) { $pick = $exact | Select-Object -First 1 }
+  if (-not $pick) { $pick = $voices | Where-Object { $_.VoiceInfo.Culture.Name -like 'en-*' } | Select-Object -First 1 }
+}
+if (-not $pick) { Write-Error '系统里没有可用的英语声音'; exit 1 }
+$synth.SelectVoice($pick.VoiceInfo.Name)
+$format = New-Object System.Speech.AudioFormat.SpeechAudioFormatInfo(11025, [System.Speech.AudioFormat.AudioBitsPerSample]::Sixteen, [System.Speech.AudioFormat.AudioChannel]::Mono)
 $synth.SetOutputToWaveFile(${shellQuote(outWav)}, $format)
 $synth.Speak(${shellQuote(text)})
 $synth.Dispose()
+Write-Output ("VOICE:" + $pick.VoiceInfo.Name)
+if ($note -ne '') { Write-Output ("NOTE:" + $note) }
 `
-  }
-  const runOnce = (voiceName) => {
+  const runOnce = () => {
     /* Windows PowerShell 5.1 读没有 BOM 的脚本会按系统 ANSI 码页解码，
        路径里带中文就会乱码，所以这里必须写 UTF-8 BOM。 */
-    writeFileSync(psFile, '\uFEFF' + buildScript(voiceName), 'utf8')
+    writeFileSync(psFile, '\uFEFF' + buildScript(), 'utf8')
     const res = spawnSync(
       'powershell',
       ['-NoProfile', '-ExecutionPolicy', 'Bypass', '-Command', `& ${shellQuote(psFile)}`],
@@ -270,45 +349,55 @@ $synth.Dispose()
     if (res.status !== 0) {
       return { ok: false, error: (res.stderr || res.stdout || `退出码 ${res.status}`).trim() }
     }
-    return { ok: true, error: '' }
+    let voice = ''
+    let note = ''
+    for (const line of String(res.stdout || '').split(/\r?\n/)) {
+      if (line.startsWith('VOICE:')) voice = line.slice(6).trim()
+      else if (line.startsWith('NOTE:')) note = line.slice(5).trim()
+    }
+    if (!voice) return { ok: false, error: 'System.Speech 没有返回选中的声音' }
+    return { ok: true, voice, note }
   }
   try {
-    let lastError = ''
-    if (voice) {
-      const withVoice = runOnce(voice)
-      if (withVoice.ok) return { note: '', voice }
-      lastError = withVoice.error
-      const fallback = runOnce('')
-      if (fallback.ok) {
-        return { note: `声音 ${voice} 不可用，已回退到系统默认声音`, voice: '系统默认' }
-      }
-      lastError = fallback.error
-    } else {
-      const res = runOnce('')
-      if (res.ok) return { note: '', voice: '系统默认' }
-      lastError = res.error
-    }
-    throw new Error(`System.Speech 合成失败：${lastError}`)
+    const res = runOnce()
+    if (!res.ok) throw new Error(`System.Speech 合成失败：${res.error}`)
+    return { note: res.note, voice: res.voice }
   } finally {
     rmSync(psFile, { force: true })
   }
 }
 
-function synthLinux(text, outWav, voice) {
-  const res = spawnSync(
-    'espeak-ng',
-    ['-w', outWav, '-s', '140', '-v', 'en-us', '-a', '100', text],
-    { encoding: 'utf8' }
-  )
+function synthLinux(text, outWav, plan) {
+  const base = plan.accent === 'uk' ? 'en-gb' : 'en-us'
+  const variant = plan.gender === 'male' ? '+m3' : '+f3'
+  const run = (spec) =>
+    spawnSync(
+      'espeak-ng',
+      ['-w', outWav, '-s', '140', '-v', spec, '-a', '100', text],
+      { encoding: 'utf8' }
+    )
+  let spec = base + variant
+  let res = run(spec)
+  let note = ''
   if (res.error) {
     throw new Error(res.error.code === 'ENOENT' ? NO_ESPEAK_HINT : `espeak-ng 调用失败：${res.error.message}`)
   }
   if (res.status !== 0) {
-    throw new Error(`espeak-ng 合成失败：${(res.stderr || res.stdout || `退出码 ${res.status}`).trim()}`)
+    const fallback = run(base)
+    if (fallback.error) {
+      throw new Error(fallback.error.code === 'ENOENT' ? NO_ESPEAK_HINT : `espeak-ng 调用失败：${fallback.error.message}`)
+    }
+    if (fallback.status !== 0) {
+      throw new Error(`espeak-ng 合成失败：${(fallback.stderr || fallback.stdout || `退出码 ${fallback.status}`).trim()}`)
+    }
+    note = `espeak 变体 ${spec} 不可用，已回退到 ${base}`
+    spec = base
+    res = fallback
   }
+  if (plan.explicit) note = (note ? note + '；' : '') + `Linux 不支持 --voice，已按设置使用 ${spec}`
   return {
-    note: voice ? 'Linux 下暂不支持 --voice，固定使用 en-us' : '',
-    voice: 'en-us',
+    note,
+    voice: spec,
     extraNote: 'espeak-ng 的输出采样率不保证是 11025 Hz，请用 file 或 ffprobe 确认。'
   }
 }
@@ -320,10 +409,10 @@ function platformLabel() {
   return `未知平台 ${process.platform}`
 }
 
-function synthesize(text, outWav, voice) {
-  if (process.platform === 'darwin') return synthMac(text, outWav, voice)
-  if (process.platform === 'win32') return synthWindows(text, outWav, voice)
-  if (process.platform === 'linux') return synthLinux(text, outWav, voice)
+function synthesize(text, outWav, plan) {
+  if (process.platform === 'darwin') return synthMac(text, outWav, plan)
+  if (process.platform === 'win32') return synthWindows(text, outWav, plan)
+  if (process.platform === 'linux') return synthLinux(text, outWav, plan)
   throw new Error(`不支持的平台：${process.platform}（只支持 macOS / Windows / Linux）`)
 }
 
@@ -432,7 +521,7 @@ const WRITE_BACK_NOTE = {
   none: 'wordAudio / phrases[].audio'
 }
 
-function processEntry(entry, root, wordsFile, list, hadBom, voice, index) {
+function processEntry(entry, root, wordsFile, list, hadBom, plan, index) {
   const slug = entry && typeof entry.slug === 'string' ? entry.slug : ''
   if (!slug) throw new Error(`words.json 第 ${index + 1} 条词条缺少 slug`)
   if (!SLUG_RE.test(slug)) {
@@ -450,11 +539,11 @@ function processEntry(entry, root, wordsFile, list, hadBom, voice, index) {
   }
 
   const notes = []
-  let usedVoice = voice || '系统默认'
+  let usedVoice = ''
   for (const seg of segs) {
     const outWav = path.join(root, seg.rel)
     try {
-      const result = synthesize(seg.text, outWav, voice)
+      const result = synthesize(seg.text, outWav, plan)
       if (result.note && !notes.includes(result.note)) notes.push(result.note)
       if (result.extraNote && !notes.includes(result.extraNote)) notes.push(result.extraNote)
       usedVoice = result.voice || usedVoice
@@ -476,7 +565,7 @@ function processEntry(entry, root, wordsFile, list, hadBom, voice, index) {
     }
     const outWav = path.join(root, seg.rel)
     try {
-      const result = synthesize(seg.text, outWav, voice)
+      const result = synthesize(seg.text, outWav, plan)
       if (result.note && !notes.includes(result.note)) notes.push(result.note)
       if (result.extraNote && !notes.includes(result.extraNote)) notes.push(result.extraNote)
       usedVoice = result.voice || usedVoice
@@ -508,6 +597,7 @@ function main() {
   if (!args.slug && !args.all) fail(`请用 --slug <slug> 指定一个单词，或用 --all 处理全部词条\n${USAGE}`)
 
   const root = resolveRoot(args.root)
+  const plan = resolveVoicePlan(root, args)
   const wordsFile = path.join(root, 'words.json')
   const { list, hadBom } = readWords(wordsFile)
 
@@ -530,13 +620,14 @@ function main() {
   }
 
   console.log(`平台：${platformLabel()}`)
-  if (args.voice) console.log(`声音：${args.voice}`)
+  console.log(`发音：${planLabel(plan)}`)
+  if (plan.explicit) console.log(`指定声音：${plan.explicit}`)
 
   let done = 0
   for (const { entry, index } of targets) {
     let result
     try {
-      result = processEntry(entry, root, wordsFile, list, hadBom, args.voice, index)
+      result = processEntry(entry, root, wordsFile, list, hadBom, plan, index)
     } catch (err) {
       fail(err.message)
     }

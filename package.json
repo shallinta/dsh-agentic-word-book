@@ -1,6 +1,6 @@
 {
   "name": "@suiji-ai/dsh-agentic-word-book",
-  "version": "1.2.1",
+  "version": "1.2.2",
   "type": "module",
   "description": "随记单词本：DSH 本地单词本插件，一个词一页，插图、发音、词组、例句，带拼写练习和单词辨析。",
   "exports": {

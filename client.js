@@ -370,6 +370,7 @@ window.__ModuleLoader__.load({
 .wb-seg button{font-size:calc(13px * var(--wb-scale));color:var(--wb-ink-soft);background:var(--wb-soft);border:1px solid var(--wb-line-strong);border-radius:999px;padding:8px 16px;transition:background .16s,border-color .16s,color .16s}
 .wb-seg button:hover{background:var(--wb-soft-hover)}
 .wb-seg button[aria-pressed="true"]{background:linear-gradient(180deg,var(--wb-btn-top),var(--wb-coral));border-color:var(--wb-coral);color:#fff;font-weight:600}
+.wb-seg button:disabled{opacity:.45;cursor:not-allowed}
 .wb-set-note{margin:2px 0 18px;font-size:calc(12px * var(--wb-scale));line-height:1.7;color:var(--wb-muted)}
 .wb-set-row{display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin-top:8px}
 .wb-set-row:first-child{margin-top:0}
@@ -540,6 +541,7 @@ window.__ModuleLoader__.load({
        四款开源字体随插件分发（assets/fonts，OFL），其余用系统自带。
        Segoe Print 只有 Windows 有，mac 上不进候选。 */
     const IS_WIN = /windows/i.test((typeof navigator !== 'undefined' && navigator.userAgent) || '');
+    const IS_MAC = !IS_WIN && ((typeof navigator !== 'undefined' && /macintosh|mac os x/i.test(navigator.userAgent || '')) || (typeof navigator !== 'undefined' && /mac/i.test(navigator.platform || '')));
     const FONT_CHOICES = IS_WIN
       ? ['Segoe Print', 'Patrick Hand', 'Kalam', 'Comic Neue', 'Comic Sans MS', 'Caveat']
       : ['Patrick Hand', 'Kalam', 'Comic Neue', 'Comic Sans MS', 'Caveat'];
@@ -732,6 +734,8 @@ window.__ModuleLoader__.load({
       backgroundImage: '',         // 相对根目录的背景图
       backgroundOpacity: 0.42,
       audioVolume: 1,              // 音频播放音量 0.01~1
+      voiceAccent: 'us',           // us | uk
+      voiceGender: 'female',       // female | male
       fontWord: DEFAULT_WORD_FONT,
       fontPhrase: DEFAULT_PHRASE_FONT
     };
@@ -862,6 +866,8 @@ window.__ModuleLoader__.load({
       STORE.settings.backgroundOpacity = clamp01(STORE.settings.backgroundOpacity);
       const av = Number(STORE.settings.audioVolume);
       STORE.settings.audioVolume = isFinite(av) ? Math.min(1, Math.max(0.01, av)) : 1;
+      STORE.settings.voiceAccent = STORE.settings.voiceAccent === 'uk' ? 'uk' : 'us';
+      STORE.settings.voiceGender = STORE.settings.voiceGender === 'male' ? 'male' : 'female';
       STORE.skillStale = state.skillStale === true;
     }
 
@@ -2207,8 +2213,10 @@ window.__ModuleLoader__.load({
           return h('button', {
             key: o.v,
             type: 'button',
+            disabled: !!props.disabled,
             'aria-pressed': props.value === o.v ? 'true' : 'false',
             onClick: function () {
+              if (props.disabled) return;
               const patch = {};
               patch[props.field] = o.v;
               patchSettings(patch);
@@ -2305,7 +2313,7 @@ window.__ModuleLoader__.load({
                   alt: '随记单词本 logo'
                 })
               ),
-              h('span', { className: 'wb-settings-ver' }, '随记单词本 · v1.2.1')
+              h('span', { className: 'wb-settings-ver' }, '随记单词本 · v1.2.2')
             )
           ),
 
@@ -2568,6 +2576,34 @@ window.__ModuleLoader__.load({
                 h('span', { className: 'wb-set-hint' }, '新建会话时会把这个目录注册成同名的 DSH 工作空间')
               )
             )
+          ),
+
+          h(SettingsSection, { title: '发音', desc: '新建单词卡生成音频时使用的英语发音，只会选英语声音。' },
+            h('div', { className: 'wb-field' },
+              h('span', null, '口音'),
+              h(Seg, {
+                field: 'voiceAccent',
+                value: s.voiceAccent || 'us',
+                options: [
+                  { v: 'us', label: '美式' },
+                  { v: 'uk', label: '英式' }
+                ]
+              })
+            ),
+            h('div', { className: 'wb-field' },
+              h('span', null, '声音'),
+              h(Seg, {
+                field: 'voiceGender',
+                value: s.voiceGender || 'female',
+                disabled: IS_MAC,
+                options: [
+                  { v: 'female', label: '女声' },
+                  { v: 'male', label: '男声' }
+                ]
+              }),
+              IS_MAC ? h('p', { className: 'wb-set-hint' }, 'macOS 的系统语音不提供性别信息，会按口音挑一个；Windows / Linux 可以按性别选择。') : null
+            ),
+            h('p', { className: 'wb-set-note' }, '只影响之后新生成的音频；已有单词可以在 DSH 会话里用新增单词技能（/suiji-word-book），让它重新生成音频。')
           ),
 
           h(SettingsSection, { title: '技能与权限', desc: '让 AI 用技能帮你加单词、改插图，并决定新会话的权限。' },

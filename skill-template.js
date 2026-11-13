@@ -59,6 +59,8 @@ ${rootDir}
 ## 常见操作
 
 - **改标题/副标题/分组**：改 \`settings.json\`，不要动 \`rootDir\` / \`workDir\`；标题和副标题的对齐分别用 \`titleAlign\` / \`subtitleAlign\`，取值 \`left\` / \`center\` / \`right\`；颜色用 \`titleColor\` / \`subtitleColor\`，写 \`#rrggbb\`
+- **换发音**：改 \`settings.json\` 的 \`voiceAccent\`（us / uk）和 \`voiceGender\`（female / male），再重新运行 make-audio.mjs 生成音频
+- **重新生成发音**：已有单词要重做音频时按 add-word.md 第 6 节走，不新建词条、不改词条内容，只跑 make-audio.mjs
 - **换主题**：改 \`settings.json\` 的 \`theme\`，取 \`auto\`（晨昏，默认）、\`morning\`（晨光）、\`midnight\`（子夜）或 \`dust\`（雨滴，毛玻璃）
 - **新建会话**：DSH 工作目录用 \`workDir\`（默认 \`~/Documents/deepseek-harness/suiji-ai/\`），不存在就创建；工作空间名用 \`workTitle\`（默认「随记」）
 - **打标签**：先把新标签加进 \`meta.json\` 的 \`tagList\`，再写进 \`tags[slug]\`
@@ -139,6 +141,13 @@ node "<skill目录>/scripts/create-word.mjs" --root "${rootDir}" --word "apple"
 node "<skill目录>/scripts/make-audio.mjs" --root "${rootDir}" --slug apple
 \`\`\`
 
+发音读取根目录 \`settings.json\` 里的两个配置项，脚本会自动读取，一般不用传参：
+
+- \`voiceAccent\`：\`us\`（美式，默认）或 \`uk\`（英式）
+- \`voiceGender\`：\`female\`（默认）或 \`male\`；macOS 的系统语音不提供性别信息，会按口音从内置名单里挑声音，Windows / Linux 可以按性别选择
+
+只使用英语声音。临时覆盖可加 \`--accent us|uk\` / \`--gender female|male\`；\`--voice "名字"\` 只在明确知道某个英语声音时用，非英语声音会被拒绝。
+
 每个词条先写 \`word.wav\`、\`p1.wav\`–\`p5.wav\`，再按结构写例句音频，全部是 11025 Hz 单声道 WAV，放在 \`words/<slug>/\`：
 
 - 旧结构（单个 \`sentence\`）：\`sentence.wav\`
@@ -147,15 +156,28 @@ node "<skill目录>/scripts/make-audio.mjs" --root "${rootDir}" --slug apple
 
 句子英文为空的不生成音频，\`audio\` 留空串。路径会自动写回 \`wordAudio\`、\`phrases[].audio\`，例句写回 \`sentence.audio\`、\`senses[i].sentence.audio\` 或 \`sentences[i].audio\`。
 
-- macOS：\`say\`（默认用系统声音，可用 \`--voice "名字"\` 指定）+ \`afconvert\`
-- Windows：PowerShell 调用 \`System.Speech\`，\`--voice\` 对应 \`SelectVoice\`
-- Linux：\`espeak-ng\`，输出采样率不保证 11025 Hz
+- macOS：\`say\` 按 \`settings.json\` 的口音/性别挑一个英语声音，可用 \`--voice "名字"\` 显式指定；再用 \`afconvert\` 转码
+- Windows：PowerShell 调用 \`System.Speech\`，按 \`Culture\` 和 \`Gender\` 选英语声音
+- Linux：\`espeak-ng\` 固定 \`en-us\` / \`en-gb\`，性别用语音变体，输出采样率不保证 11025 Hz
 
 要处理全部词条可把 \`--slug apple\` 换成 \`--all\`。任何一段生成失败，脚本都会指出是哪个文件并以非 0 退出；结束时打印生成了几段例句音频。
 
 ## 5. 刷新单词本面板确认
 
 约定：\`created\` 用当前时间；一词 5 词组 + 1 条例句（多词性时每个词性各配一条）；不要改 \`rootDir\`。
+
+## 6. 重新生成音频（已有单词）
+
+用户要求「重新生成发音」「换个声音」「换成英式」这类操作时，不要新建词条，也不要改词条文字、插图和标签，只重做音频：
+
+1. 读根目录 \`settings.json\` 的 \`voiceAccent\`（us / uk）和 \`voiceGender\`（female / male）；用户在对话里明确指定了声音时以用户为准
+2. 全部词重做：
+   \`\`\`text
+   node "<skill目录>/scripts/make-audio.mjs" --root "${rootDir}" --all
+   \`\`\`
+   只重做某几个词，就换成 \`--slug <slug>\` 逐个执行
+3. 脚本只覆盖 \`words/<slug>/\` 下的音频文件并写回 \`words.json\` 的 audio 路径，词条其他内容不动
+4. 完成后看输出里的「发音：」「声音：」和生成段数，向用户说明这次用了什么声音；如果提示某个变体回退，也一并告诉用户
 
 ## 权限
 
