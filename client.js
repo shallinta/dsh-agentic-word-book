@@ -524,6 +524,12 @@ window.__ModuleLoader__.load({
 .wb-theme-midnight .wb-rec-opt .wb-speak:hover{background:#334680;border-color:#556AAB}
 .wb-theme-midnight .wb-rec-pick{background:#3A2A22;border-color:#5A3A2C;color:#FFB08A}
 
+.wb-crop-mask{z-index:60}
+.wb-crop-dialog{width:min(860px,100%)}
+.wb-crop-stage{display:block;width:100%;height:min(54vh,480px);margin:14px 0;background-color:#fff;background-image:conic-gradient(#e0e0e0 25%,#fff 0 50%,#e0e0e0 0 75%,#fff 0);background-size:20px 20px;border:1px solid var(--wb-line-strong);border-radius:12px;touch-action:none;user-select:none}
+.wb-crop-dialog button:disabled{opacity:.55;cursor:wait}
+.wb-theme-dust .wb-crop-dialog .wb-mini{background:rgba(255,255,255,.82);border-color:var(--wb-coral-2);color:var(--wb-ink);box-shadow:0 2px 6px rgba(13,90,80,.12)}
+.wb-theme-dust .wb-crop-dialog .wb-mini:hover{background:#fff;border-color:var(--wb-ink-soft);box-shadow:0 3px 9px rgba(13,90,80,.18)}
 `;
 
     /* ============================== 持久状态 ==============================
@@ -946,6 +952,7 @@ window.__ModuleLoader__.load({
       pendingRoot: null,       // 换目录时等待用户确认是否迁移
       addWordState: '',        // 「+单词」提交后的提示
       addWordPop: null,        // 「+单词」浮层 { x, y }
+      artCrop: null,
       wordSettings: null,      // 单词详情设置弹窗 { slug }
       hostLoaded: false,        // 是否已从根目录读到状态
       filters: [],             // 首页正在筛选的标签
@@ -1808,18 +1815,19 @@ window.__ModuleLoader__.load({
       }
       if (typeof fetch !== 'function') return;
       const qs = '?slug=' + encodeURIComponent(slug) + '&name=' + encodeURIComponent(file.name || '');
-      fetch(HOST_BASE + '/upload' + qs, {
+      return fetch(HOST_BASE + '/upload' + qs, {
         method: 'POST',
         headers: { 'content-type': file.type || 'application/octet-stream' },
         body: file
       })
         .then(function (r) { return r.ok ? r.json() : null; })
         .then(function (res) {
-          if (res && res.words) applyDiskWords(res.words);
+          if (!res || !res.ok) throw new Error((res && res.error) || '插图没传上去，再试一次');
+          if (res.words) applyDiskWords(res.words);
           applyHostResult(res);
           emit();
-        })
-        .catch(function () { showNotice('插图没传上去，再试一次'); });
+          return res;
+        });
     }
 
     function clearWordArt(slug) {
@@ -1839,10 +1847,160 @@ window.__ModuleLoader__.load({
       input.onchange = function () {
         const file = input.files && input.files[0];
         if (!file) return;
-        setWordArt(slug, file);
+        openArtCrop(slug, file);
       };
       input.click();
     }
+    /* 替换插图先裁剪；超出原图的部分在导出时填白。 */
+    function initialArtCrop(w, h, mode) {
+      /* cover 居中裁掉长边；contain 完整保留图片，两侧等量补白。 */
+      const width = mode === 'contain' ? Math.max(w, h * 4 / 3) : Math.min(w, h * 4 / 3);
+      const height = width * 3 / 4;
+      return { x: (w - width) / 2, y: (h - height) / 2, w: width, h: height };
+    }
+    function closeArtCrop() {
+      const c = STORE.artCrop;
+      if (c) URL.revokeObjectURL(c.url);
+      STORE.artCrop = null;
+      emit();
+    }
+    function openArtCrop(slug, file) {
+      if (file.size > MAX_ART_BYTES) return showNotice('图片太大了，上限 25 MB');
+      const url = URL.createObjectURL(file);
+      const img = new Image();
+      img.onload = function () {
+        if (!img.naturalWidth || !img.naturalHeight) {
+          URL.revokeObjectURL(url);
+          return showNotice('图片尺寸无效');
+        }
+        closeArtCrop();
+        STORE.artCrop = { slug: slug, file: file, url: url, image: img };
+        emit();
+      };
+      img.onerror = function () { URL.revokeObjectURL(url); showNotice('无法读取这张图片'); };
+      img.src = url;
+    }
+    function ArtCropDialog() {
+      const c = STORE.artCrop;
+      const image = c.image;
+      const w = image.naturalWidth, hgt = image.naturalHeight;
+      const [box, setBox] = useState(function () { return initialArtCrop(w, hgt); });
+      const [busy, setBusy] = useState(false);
+      const svg = useRef(null);
+      const drag = useRef(null);
+      useEffect(function () {
+        function escape(ev) { if (ev.key === 'Escape' && !busy) closeArtCrop(); }
+        document.addEventListener('keydown', escape);
+        return function () { document.removeEventListener('keydown', escape); };
+      }, [busy]);
+      const pad = Math.max(w, hgt) * 0.8;
+      function point(ev) {
+        const pt = svg.current.createSVGPoint();
+        pt.x = ev.clientX; pt.y = ev.clientY;
+        return pt.matrixTransform(svg.current.getScreenCTM().inverse());
+      }
+      function begin(ev, kind) {
+        if (busy) return;
+        ev.preventDefault();
+        const pt = point(ev);
+        drag.current = { kind: kind, x: pt.x, y: pt.y, box: Object.assign({}, box) };
+        svg.current.setPointerCapture(ev.pointerId);
+      }
+      function move(ev) {
+        const d = drag.current;
+        if (!d) return;
+        const pt = point(ev), dx = pt.x - d.x, dy = pt.y - d.y;
+        const b = d.box;
+        const min = Math.max(1, Math.min(w, hgt) * 0.015);
+        if (d.kind === 'move') {
+          setBox({ x: b.x + dx, y: b.y + dy, w: b.w, h: b.h });
+          return;
+        }
+        const ratio = 4 / 3;
+        const west = d.kind.indexOf('w') >= 0;
+        const east = d.kind.indexOf('e') >= 0;
+        const north = d.kind.indexOf('n') >= 0;
+        const south = d.kind.indexOf('s') >= 0;
+        const horizontal = west || east;
+        const vertical = north || south;
+        let deltaWidth;
+        if (horizontal && vertical) {
+          /* 将鼠标位移投影到 4:3 对角线上，对角保持不动。 */
+          deltaWidth = ((west ? -dx : dx) + (north ? -dy : dy) / ratio) / (1 + 1 / (ratio * ratio));
+        } else {
+          deltaWidth = horizontal ? (west ? -dx : dx) : (north ? -dy : dy) * ratio;
+        }
+        const width = Math.max(min * ratio, b.w + deltaWidth);
+        const height = width / ratio;
+        setBox({
+          x: west ? b.x + b.w - width : (east ? b.x : b.x + (b.w - width) / 2),
+          y: north ? b.y + b.h - height : (south ? b.y : b.y + (b.h - height) / 2),
+          w: width,
+          h: height
+        });
+      }
+      async function save(original) {
+        setBusy(true);
+        try {
+          let file = c.file;
+          if (!original) {
+            const canvas = document.createElement('canvas');
+            const scale = Math.min(1, 4096 / Math.max(box.w, box.h));
+            canvas.width = Math.max(1, Math.round(box.w * scale));
+            canvas.height = Math.max(1, Math.round(box.h * scale));
+            const ctx = canvas.getContext('2d');
+            ctx.fillStyle = '#ffffff';
+            ctx.fillRect(0, 0, canvas.width, canvas.height);
+            ctx.drawImage(image, -box.x * scale, -box.y * scale, w * scale, hgt * scale);
+            const blob = await new Promise(function (resolve) { canvas.toBlob(resolve, 'image/png'); });
+            if (!blob) throw new Error('无法导出裁剪图片');
+            file = new File([blob], 'cropped.png', { type: 'image/png' });
+          }
+          if (file.size > MAX_ART_BYTES) throw new Error('裁剪图片超过 25 MB，请缩小裁剪范围');
+          await setWordArt(c.slug, file);
+          closeArtCrop();
+        } catch (err) {
+          setBusy(false);
+          showNotice(err.message || '保存失败，请重试');
+        }
+      }
+      const hs = Math.max(w, hgt) / 50;
+      const handles = [
+        ['nw', box.x, box.y], ['n', box.x + box.w / 2, box.y], ['ne', box.x + box.w, box.y],
+        ['e', box.x + box.w, box.y + box.h / 2], ['se', box.x + box.w, box.y + box.h],
+        ['s', box.x + box.w / 2, box.y + box.h], ['sw', box.x, box.y + box.h], ['w', box.x, box.y + box.h / 2]
+      ];
+      return h('div', { className: 'wb-mask wb-crop-mask' },
+        h('div', { className: 'wb-settings wb-crop-dialog', role: 'dialog', 'aria-modal': 'true', 'aria-label': '裁剪插图' },
+          h('div', { className: 'wb-set-head' },
+            h('h2', null, '裁剪插图'),
+            h('button', { className: 'wb-set-close', disabled: busy, onClick: closeArtCrop, 'aria-label': '关闭裁剪' }, h(XIcon, { size: 16 }))
+          ),
+          h('p', { className: 'wb-set-hint' }, '拖动框内移动，拖动边缘或四角按 4:3 等比缩放。框外的图片不保留，超出图片的部分补白。'),
+          /gif/i.test(c.file.type) ? h('p', { className: 'wb-set-hint' }, '裁剪 GIF 会保存为静态 PNG；要保留动画，请选「使用原图」。') : null,
+          h('svg', {
+            ref: svg, className: 'wb-crop-stage', viewBox: [-pad, -pad, w + pad * 2, hgt + pad * 2].join(' '),
+            onPointerMove: move, onPointerUp: function () { drag.current = null; },
+            onPointerCancel: function () { drag.current = null; },
+            onLostPointerCapture: function () { drag.current = null; }
+          },
+            h('rect', { x: 0, y: 0, width: w, height: hgt, fill: '#ffffff' }),
+            h('image', { href: c.url, x: 0, y: 0, width: w, height: hgt }),
+            h('rect', { x: box.x, y: box.y, width: box.w, height: box.h, fill: 'rgba(20,184,166,.08)', stroke: '#14b8a6', strokeWidth: hs / 6, onPointerDown: function (ev) { begin(ev, 'move'); }, style: { cursor: 'move' } }),
+            handles.map(function (v) {
+              return h('rect', { key: v[0], x: v[1] - hs / 2, y: v[2] - hs / 2, width: hs, height: hs, fill: '#ffffff', stroke: '#0d9488', strokeWidth: hs / 8, onPointerDown: function (ev) { begin(ev, v[0]); }, style: { cursor: v[0] + '-resize' } });
+            })
+          ),
+          h('div', { className: 'wb-set-row' },
+            h('button', { type: 'button', className: 'wb-mini', disabled: busy, title: '居中填满 4:3，左右或上下等量裁切', onClick: function () { setBox(initialArtCrop(w, hgt, 'cover')); } }, 'Cover · 填满'),
+            h('button', { type: 'button', className: 'wb-mini', disabled: busy, title: '完整保留图片，左右或上下等量补白', onClick: function () { setBox(initialArtCrop(w, hgt, 'contain')); } }, 'Contain · 完整显示'),
+            h('button', { className: 'wb-mini', disabled: busy, onClick: function () { save(true); } }, '使用原图'),
+            h('button', { className: 'wb-btn wb-btn--sm', disabled: busy, onClick: function () { save(false); } }, busy ? '正在保存…' : '确认裁剪')
+          )
+        )
+      );
+    }
+
     /* ---------- 自定义主音频 ---------- */
     const MAX_AUDIO_BYTES = 25 * 1024 * 1024;
 
@@ -2313,7 +2471,7 @@ window.__ModuleLoader__.load({
                   alt: '随记单词本 logo'
                 })
               ),
-              h('span', { className: 'wb-settings-ver' }, '随记单词本 · v1.2.2')
+              h('span', { className: 'wb-settings-ver' }, '随记单词本 · v1.2.3')
             )
           ),
 
@@ -3527,7 +3685,8 @@ window.__ModuleLoader__.load({
         STORE.notice ? h('div', { className: 'wb-toast', role: 'status', 'aria-live': 'polite' }, STORE.notice) : null,
         STORE.addWordPop ? h(AddWordPopover) : null,
         STORE.wordSettings ? h(WordSettingsDialog) : null,
-        STORE.menu ? h(TagMenu) : null
+        STORE.menu ? h(TagMenu) : null,
+        STORE.artCrop ? h(ArtCropDialog, { key: STORE.artCrop.url }) : null
       );
     }
 
