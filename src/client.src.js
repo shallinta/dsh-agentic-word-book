@@ -2471,7 +2471,7 @@ window.__ModuleLoader__.load({
                   alt: '随记单词本 logo'
                 })
               ),
-              h('span', { className: 'wb-settings-ver' }, '随记单词本 · v1.2.3')
+              h('span', { className: 'wb-settings-ver' }, '随记单词本 · v1.3.0')
             )
           ),
 

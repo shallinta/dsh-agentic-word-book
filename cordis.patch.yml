@@ -1,4 +1,4 @@
-﻿- insert:
+- insert:
     - id: word-book
       name: '@suiji-ai/dsh-agentic-word-book'
       config: {}
